@@ -1,0 +1,54 @@
+
+# StudyBuddy 📚🤖  
+**Your AI-Powered Study Companion for Smarter Learning**
+
+---
+
+## Overview 🎯  
+**StudyBuddy** is an innovative, AI-driven study assistant designed to streamline the learning process for students and professionals. From capturing lecture audio to organizing detailed notes with equations and diagrams, StudyBuddy is your all-in-one academic ally.
+
+---
+
+## Features ✨  
+
+### 🔊 Real-Time Transcription  
+- Accurately transcribe lecture audio in real-time.  
+
+### 🖼️ Visual Content Recognition  
+- Convert lecture slides and diagrams into text and searchable notes.
+
+### 🧮 Equation Magic  
+- Render complex equations into LaTeX for clear and organized representation.
+
+### 📋 Summarization & Organization  
+- Generate concise summaries and structured outlines automatically.
+
+### 🗂️ Smart Note Organization  
+- Tag, highlight, and categorize notes for easy access.
+
+### 🌐 Multi-Language Support  
+- Transcribe and process content in multiple languages.
+
+### 📄 Flexible Exports  
+- Export notes to Markdown or PDF for offline access and sharing.
+
+---
+
+## Tech Stack ⚙️  
+- **React.js**: Dynamic user interface.  
+- **Tailwind CSS**: Sleek, responsive design.  
+- **React Speech Recognition**: Real-time transcription.  
+- **Tesseract.js & Simpletex API**: Convert images to text and LaTeX.  
+- **Mermaid.js**: Generate diagrams and flowcharts.  
+- **Google Gemini LLM**: Integrate audio and visual data for cohesive notes.  
+- **Firebase**: Secure, cloud-based note storage.
+
+---
+
+## Installation 🛠️  
+
+Follow these steps to set up and run StudyBuddy on your local machine:  
+
+1. Clone the repository:  
+  
+   
