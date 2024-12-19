@@ -1,44 +1,37 @@
 'use client'
 
-// Import necessary dependencies
 import Link from 'next/link'
 
-/**
- * Header Component
- * Responsive header with navigation, dropdown menu, and authentication buttons
- * Fixed positioning to stay at top of screen while scrolling
- */
 const Header = () => {
   return (
-    // Main header container with dark background and fixed positioning
-    <header className="w-full bg-[#14171F] fixed top-0 left-0 z-50">
+    // Main header container - dark background, fixed position, and bottom border
+    <header className="w-full bg-[#14171F] fixed top-0 left-0 z-50 border-b border-gray-800">
       {/* Full width container with responsive padding */}
-      <div className="w-full px-4 sm:px-6 lg:px-8">
-        {/* Flex container for header layout */}
-        <div className="flex justify-between items-center h-16">
+      <div className="w-full px-6 sm:px-8 lg:px-10">
+        {/* Flex container for header layout with increased height */}
+        <div className="flex justify-between items-center h-20">
           
-          {/* Left Section: Logo and Brand Name */}
+          {/* Left section: Logo and Brand */}
           <div className="flex items-center space-x-3">
-            {/* Circular logo placeholder */}
-            <div className="w-8 h-8 bg-white rounded-full"></div>
-            {/* Brand name with hover effect */}
-            <Link href="/" className="text-2xl font-bold text-[#B591B8] hover:text-[#c9a5cc]">
+            {/* Logo */}
+            <div className="w-10 h-10 bg-white rounded-full"></div>
+            {/* Brand name - larger size and matching color */}
+            <Link href="/" className="text-3xl font-bold text-blue-300 hover:text-blue-200">
               StudyBuddy
             </Link>
           </div>
 
-          {/* Middle Section: Navigation Menu */}
-          <nav className="flex space-x-6">
+          {/* Middle section: Navigation Links */}
+          <nav className="flex space-x-8">
             {/* Features Dropdown - Using group hover */}
             <div className="relative group">
               {/* Container to extend hover area */}
               <div className="flex items-center">
                 <button
-                  className="text-gray-300 hover:text-white font-medium flex items-center"
-                  aria-expanded="false"
+                  className="text-lg text-gray-300 hover:text-white font-medium flex items-center"
                 >
                   Features
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
@@ -48,49 +41,48 @@ const Header = () => {
               <div 
                 className="absolute left-0 w-48 bg-[#14171F] rounded-md shadow-lg py-1 
                            opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                           transition-all duration-300 mt-2"
+                           transition-all duration-300 mt-2 border border-gray-800"
               >
-                <Link href="/feature1" className="block px-4 py-2 text-gray-300 hover:bg-[#B591B8] hover:text-white">
+                <Link href="/feature1" className="block px-4 py-2 text-gray-300 hover:bg-blue-500/10 hover:text-white">
                   Feature 1
                 </Link>
-                <Link href="/feature2" className="block px-4 py-2 text-gray-300 hover:bg-[#B591B8] hover:text-white">
+                <Link href="/feature2" className="block px-4 py-2 text-gray-300 hover:bg-blue-500/10 hover:text-white">
                   Feature 2
                 </Link>
-                <Link href="/feature3" className="block px-4 py-2 text-gray-300 hover:bg-[#B591B8] hover:text-white">
+                <Link href="/feature3" className="block px-4 py-2 text-gray-300 hover:bg-blue-500/10 hover:text-white">
                   Feature 3
                 </Link>
-                <Link href="/feature4" className="block px-4 py-2 text-gray-300 hover:bg-[#B591B8] hover:text-white">
+                <Link href="/feature4" className="block px-4 py-2 text-gray-300 hover:bg-blue-500/10 hover:text-white">
                   Feature 4
                 </Link>
-                <Link href="/feature5" className="block px-4 py-2 text-gray-300 hover:bg-[#B591B8] hover:text-white">
+                <Link href="/feature5" className="block px-4 py-2 text-gray-300 hover:bg-blue-500/10 hover:text-white">
                   Feature 5
                 </Link>
               </div>
             </div>
-
             {/* About link */}
             <Link href="/about" 
-              className="text-gray-300 hover:text-white font-medium"
+              className="text-lg text-gray-300 hover:text-white font-medium"
             >
               About
             </Link>
           </nav>
 
-          {/* Right Section: Authentication Buttons */}
-          <div className="flex items-center space-x-4">
-            {/* Login button - Text style with hover effect */}
+          {/* Right section: Authentication Buttons */}
+          <div className="flex items-center space-x-6">
+            {/* Login button */}
             <Link 
               href="/login" 
-              className="px-4 py-2 text-[#B591B8] hover:text-white 
+              className="text-lg px-6 py-2 text-blue-300 hover:text-white 
                          transition-colors duration-300"
             >
               Login
             </Link>
-            {/* Sign Up button - Filled style with hover effect */}
+            {/* Sign Up button */}
             <Link 
               href="/signup" 
-              className="px-4 py-2 bg-[#B591B8] text-white 
-                         rounded-md hover:bg-[#c9a5cc] 
+              className="text-lg px-6 py-2 bg-blue-500 text-white 
+                         rounded-md hover:bg-blue-400 
                          transition-colors duration-300"
             >
               Sign Up

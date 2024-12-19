@@ -29,8 +29,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-         <Header /> 
+         <Header/> 
+         <div className="pt-20"> {/* This will push content below the fixed header */}
         {children}
+        </div>
       </body>
     </html>
   );
