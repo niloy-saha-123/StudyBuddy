@@ -21,12 +21,16 @@ const Header = () => {
 
   return (
     <header className="w-full bg-[#14171F] fixed top-0 left-0 z-50 border-b border-gray-800">
+      {/* Full width container with responsive padding */}
       <div className="w-full px-6 sm:px-8 lg:px-10">
+        {/* Flex container for header layout with increased height */}
         <div className="flex justify-between items-center h-20">
           
           {/* Left section: Logo and Brand */}
           <div className="flex items-center space-x-3">
+            {/* Logo */}
             <div className="w-10 h-10 bg-white rounded-full"></div>
+            {/* Brand name - larger size and matching color */}
             <Link href="/" className="text-3xl font-bold text-blue-300 hover:text-blue-200">
               StudyBuddy
             </Link>
@@ -37,7 +41,9 @@ const Header = () => {
             {/* Features Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                onClick={() => {
+                  setIsDropdownOpen(!isDropdownOpen);
+                }}
                 className="text-lg text-gray-300 hover:text-white font-medium flex items-center"
               >
                 Features
@@ -86,6 +92,7 @@ const Header = () => {
 
           {/* Right section: Authentication Buttons */}
           <div className="flex items-center space-x-6">
+            {/* Login button */}
             <Link 
               href="/login" 
               className="text-lg px-6 py-2 text-blue-300 hover:text-white 
@@ -93,6 +100,7 @@ const Header = () => {
             >
               Login
             </Link>
+            {/* Sign Up button */}
             <Link 
               href="/signup" 
               className="text-lg px-6 py-2 bg-blue-500 text-white 
