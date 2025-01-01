@@ -1,8 +1,8 @@
 'use client'
 
-// Import necessary dependencies
+// Importing necessary dependencies
 import { useState } from 'react'
-import { supabase } from '@/utils/supabase'  // Import Supabase client
+//import { supabase } from '@/utils/supabase'  // Import Supabase client (Removed supabse since using clerk)
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -12,18 +12,27 @@ export default function LoginPage() {
  const [loading, setLoading] = useState(false)  // Track form submission state
  const [error, setError] = useState<string | null>(null)  // Track error messages
 
- // Handle form submission
  const handleLogin = async (e: React.FormEvent) => {
-   e.preventDefault()  // Prevent default form submission
-   setLoading(true)   // Start loading state
-   setError(null)     // Clear any previous errors
-
-   try {
-     // Attempt to sign in with Supabase
-     const { data, error } = await supabase.auth.signInWithPassword({
-       email,
-       password,
-     })
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+  
+    try {
+      // Placeholder for Clerk integration
+      console.log('Login attempted:', { email, password })
+      // Ribat will add Clerk authentication here
+      
+      // Redirect to dashboard on success
+      // window.location.href = '/dashboard'
+    } catch (error) {
+      setError((error as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  
+  
 
      // If there's an error, throw it
      if (error) throw error
