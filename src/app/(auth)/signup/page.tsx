@@ -75,6 +75,44 @@ export default function SignupPage() {
                 placeholder="you@example.com"
               />
             </div>
+
+            {/* Password Input */}
+            <div>
+              <label htmlFor="password" className="text-sm font-medium text-gray-300">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 
+                          rounded-md text-white placeholder-gray-500 
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {/* Confirm Password Input */}
+            <div>
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-300">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 
+                          rounded-md text-white placeholder-gray-500 
+                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="••••••••"
+              />
+            </div>
           </div>
         </form>
       </div>
