@@ -30,7 +30,7 @@ export default function SignupPage() {
    try {
      // Placeholder for Clerk integration
      console.log('Form submitted:', formData)
-     // Your friend will add Clerk authentication here
+     // Ribat Clerk authentication here
      
      // Redirect to dashboard on success
      // window.location.href = '/dashboard'
