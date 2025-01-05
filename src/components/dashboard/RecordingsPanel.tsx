@@ -7,10 +7,10 @@ export default function RecordingsPanel() {
 
   return (
     <div className="absolute">
-      {/* Toggle Button - Adjusted size and position */}
+      {/* Toggle Button */}
       <button
         onClick={() => setIsPanelOpen(!isPanelOpen)}
-        className="fixed top-[22px] left-4 z-50 p-2.5 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+        className="fixed top-[22px] left-6 z-50 p-2.5 rounded-lg bg-white hover:bg-gray-50 transition-colors border border-gray-200"
         aria-label="Toggle Recordings Menu"
       >
         <svg 
@@ -28,19 +28,21 @@ export default function RecordingsPanel() {
         </svg>
       </button>
 
-      {/* Background overlay */}
+      {/* Blocking overlay */}
       {isPanelOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-20 z-40 transition-opacity"
+          className="fixed inset-0 bg-black bg-opacity-20 transition-opacity pointer-events-auto"
+          style={{ zIndex: 9999 }}
           onClick={() => setIsPanelOpen(false)}
         />
       )}
 
-      {/* Panel */}
+      {/* Panel with smooth sliding animation */}
       <div 
-        className={`fixed top-0 left-0 w-72 h-full bg-white z-50 shadow-lg transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 w-72 h-full bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
           isPanelOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ zIndex: 10000 }}
       >
         <div className="p-4 pt-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-6">
