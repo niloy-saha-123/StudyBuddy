@@ -7,14 +7,14 @@ export default function RecordingsPanel() {
 
   return (
     <div className="absolute">
-      {/* Toggle Button */}
+      {/* Toggle Button - Adjusted size and position */}
       <button
         onClick={() => setIsPanelOpen(!isPanelOpen)}
-        className="fixed top-4 left-4 z-50 p-3 rounded-full bg-white shadow-lg hover:bg-gray-50 transition-colors"
+        className="fixed top-[22px] left-4 z-50 p-2.5 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
         aria-label="Toggle Recordings Menu"
       >
         <svg 
-          className="w-6 h-6 text-[#00BFFF]" 
+          className="w-5 h-5 text-blue-400" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -28,7 +28,7 @@ export default function RecordingsPanel() {
         </svg>
       </button>
 
-      {/* Rest of the panel code */}
+      {/* Background overlay */}
       {isPanelOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-20 z-40 transition-opacity"
@@ -36,14 +36,15 @@ export default function RecordingsPanel() {
         />
       )}
 
+      {/* Panel */}
       <div 
         className={`fixed top-0 left-0 w-72 h-full bg-white z-50 shadow-lg transform transition-transform duration-300 ease-in-out ${
           isPanelOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="p-6 pt-24 h-full flex flex-col">
+        <div className="p-4 pt-6 h-full flex flex-col">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-800">Recordings</h2>
+            <h2 className="text-2xl font-bold text-gray-800">Recordings</h2>
           </div>
 
           <div className="flex-1 overflow-y-auto">

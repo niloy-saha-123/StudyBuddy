@@ -2,40 +2,27 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Fredoka } from 'next/font/google'
 import RecordingsPanel from '@/components/dashboard/RecordingsPanel'
-
-const fredoka = Fredoka({
-  subsets: ['latin'],
-  weight: ['600'],  // Using 600 for a bolder look
-})
 
 export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto">
-          <div className="h-20 flex items-center">
-            {/* Logo and brand name - Adjusted spacing */}
-            <Link href="/dashboard" className="flex items-center gap-3 ml-2">  
-              <div className="w-12 h-12 bg-[#00BFFF] rounded-full"></div>
-              <span className={`${fredoka.className} text-[1.75rem] font-semibold
-                             text-[#00BFFF]`}>
+        <div className="flex items-center h-20 px-4">
+          <div className="flex-grow pl-14">
+            <Link href="/dashboard" className="block">
+              <span className="text-4xl font-bold text-blue-400">
                 StudyBuddy
               </span>
             </Link>
-
-            {/* Profile Menu */}
-            <div className="ml-auto mr-6">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100">
-                <span className="text-gray-700">Profile Menu</span>
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
           </div>
+
+          {/* Profile Menu */}
+          <button className="bg-gradient-to-r from-blue-400 to-blue-600 w-10 h-10 rounded-full flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </button>
         </div>
       </header>
 
