@@ -10,7 +10,7 @@ export default function RecordingsPanel() {
       {/* Toggle Button */}
       <button
         onClick={() => setIsPanelOpen(!isPanelOpen)}
-        className="fixed top-[22px] left-6 z-50 p-2.5 rounded-lg bg-white hover:bg-gray-50 transition-colors border border-gray-200"
+        className="fixed top-[20px] left-6 z-50 p-2.5 rounded-lg bg-white hover:bg-gray-50 transition-colors border border-gray-200"
         aria-label="Toggle Recordings Menu"
       >
         <svg 
