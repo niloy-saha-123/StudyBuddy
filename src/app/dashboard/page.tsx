@@ -3,8 +3,19 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import RecordingsPanel from '@/components/dashboard/RecordingsPanel'
+import ClassroomCard from '@/components/dashboard/ClassroomCard'
+import RecordingOptions from '@/components/recording/RecordingOptions'
+
 
 export default function DashboardPage() {
+  // Sample classroom data
+  const classrooms = [
+    { name: 'Physics 101', lectureCount: 12, lastActive: '2h ago', color: 'blue' },
+    { name: 'Calculus', lectureCount: 8, lastActive: '1d ago', color: 'purple' },
+    { name: 'Chemistry', lectureCount: 15, lastActive: '3h ago', color: 'green' },
+    { name: 'Biology', lectureCount: 10, lastActive: '5h ago', color: 'pink' }
+  ] as const
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
@@ -27,7 +38,34 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Main content goes here */}
+        {/* Classrooms Section */}
+
+        <RecordingOptions />
+
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold text-gray-800">Your Classrooms</h2>
+            <button className="flex items-center gap-2 px-4 py-2 text-blue-400 hover:bg-blue-50 rounded-lg transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create New
+            </button>
+          </div>
+
+          {/* Classrooms Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {classrooms.map((classroom) => (
+              <ClassroomCard
+                key={classroom.name}
+                name={classroom.name}
+                lectureCount={classroom.lectureCount}
+                lastActive={classroom.lastActive}
+                color={classroom.color}
+              />
+            ))}
+          </div>
+        </div>
       </main>
 
       <RecordingsPanel />
