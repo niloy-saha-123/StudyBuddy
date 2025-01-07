@@ -25,7 +25,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
   // Handle modal close attempt
   const handleClose = () => {
     if (recordingStatus === 'recording') {
-      pauseRecording() // Pause the recording
+      pauseRecording()
     }
     if (recordingStatus !== 'idle') {
       setCurrentDialog('close')
@@ -37,7 +37,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
   // Handle stop button click
   const handleStop = () => {
     if (recordingStatus === 'recording') {
-      pauseRecording() // Automatically pause the recording
+      pauseRecording()
     }
     setCurrentDialog('save')
   }
@@ -48,6 +48,11 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
     
     setIsSaving(true)
     try {
+      // Add .mp3 extension if not present
+      const finalFilename = filename.toLowerCase().endsWith('.mp3') 
+        ? filename 
+        : `${filename}.mp3`
+      
       // Simulate saving
       await new Promise(resolve => setTimeout(resolve, 1000))
       // Reset everything after saving
@@ -68,6 +73,10 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
     
     setIsSaving(true)
     try {
+      const finalFilename = filename.toLowerCase().endsWith('.mp3') 
+        ? filename 
+        : `${filename}.mp3`
+        
       await new Promise(resolve => setTimeout(resolve, 1000)) 
       stopRecording()
       setIsSaving(false)
@@ -88,7 +97,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
   const handleConfirmDiscard = () => {
     stopRecording()
     setCurrentDialog('none')
-    onClose() // Close the modal after discarding the recording
+    onClose()
   }
 
   const startRecording = async () => {
@@ -161,18 +170,21 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999]">
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
       {/* Save Dialog */}
       {currentDialog === 'save' && (
-        <div className="absolute bg-white rounded-lg p-6 shadow-xl z-[10000] w-96">
+        <div className="absolute bg-white rounded-lg p-6 shadow-xl z-[10000] w-96 animate-in slide-in-from-top-4 duration-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Save Recording</h3>
-          <input
-            type="text"
-            value={filename}
-            onChange={(e) => setFilename(e.target.value)}
-            placeholder="Enter file name"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={filename}
+              onChange={(e) => setFilename(e.target.value)}
+              placeholder="Enter file name"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12"
+            />
+            <span className="absolute right-3 top-2.5 text-gray-500">.mp3</span>
+          </div>
           <div className="flex justify-end gap-4">
             <button
               onClick={() => setCurrentDialog('none')}
@@ -186,7 +198,9 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
               disabled={!filename.trim() || isSaving}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSaving ? 'Saving...' : 'Save'}
+              <span className={isSaving ? 'text-white' : ''}>
+                {isSaving ? 'Saving...' : 'Save'}
+              </span>
             </button>
           </div>
         </div>
@@ -194,7 +208,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
 
       {/* Close Dialog */}
       {currentDialog === 'close' && (
-        <div className="absolute bg-white rounded-lg p-6 shadow-xl z-[10000] w-96">
+        <div className="absolute bg-white rounded-lg p-6 shadow-xl z-[10000] w-96 animate-in zoom-in-95 duration-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Recording in Progress</h3>
           <p className="text-gray-600 mb-6">What would you like to do?</p>
           <div className="flex flex-col gap-3">
@@ -219,7 +233,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
 
       {/* Discard Confirmation Dialog */}
       {currentDialog === 'discard' && (
-        <div className="absolute bg-white rounded-lg p-6 shadow-xl z-[10000] w-96">
+        <div className="absolute bg-white rounded-lg p-6 shadow-xl z-[10000] w-96 animate-in zoom-in-95 duration-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Confirm Discard</h3>
           <p className="text-gray-600 mb-6">Are you sure you want to discard this recording? This action cannot be undone.</p>
           <div className="flex justify-end gap-4">
@@ -240,14 +254,19 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
       )}
 
       {/* Main Modal */}
-      <div className="bg-white rounded-lg p-6 w-96">
+      <div className="bg-white rounded-lg p-6 w-96 animate-in zoom-in-95 duration-200">
         {/* Header with close button */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">
-            {recordingStatus === 'recording' ? 'Recording in Progress' : 
-             recordingStatus === 'paused' ? 'Recording Paused' : 
-             'Voice Recording'}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-gray-800">
+              {recordingStatus === 'recording' ? 'Recording in Progress' : 
+               recordingStatus === 'paused' ? 'Recording Paused' : 
+               'Voice Recording'}
+            </h2>
+            {recordingStatus === 'recording' && (
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+            )}
+          </div>
           <button 
             onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -260,7 +279,9 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
 
         {/* Content */}
         <div className="text-center">
-          <div className="text-3xl font-mono mb-4">
+          <div className={`text-4xl font-mono mb-4 transition-colors ${
+            recordingStatus === 'recording' ? 'text-blue-600' : 'text-gray-800'
+          }`}>
             {formatTime(duration)}
           </div>
           <div className="text-gray-500 mb-6">
@@ -274,7 +295,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
             {recordingStatus === 'idle' ? (
               <button
                 onClick={startRecording}
-                className="w-full py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                className="w-full py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 Start Recording
               </button>
@@ -283,17 +304,21 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
                 {/* Pause/Resume Button */}
                 <button
                   onClick={recordingStatus === 'recording' ? pauseRecording : resumeRecording}
-                  className="flex-1 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white transition-colors"
+                  className="flex-1 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {recordingStatus === 'recording' ? 'Pause' : 'Resume'}
                 </button>
 
-                {/* Stop Button */}
+                {/* Stop/Save Button - changes based on status */}
                 <button
                   onClick={handleStop}
-                  className="flex-1 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
+                  className={`flex-1 py-3 rounded-lg text-white transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                    recordingStatus === 'paused' 
+                      ? 'bg-blue-500 hover:bg-blue-600' 
+                      : 'bg-red-500 hover:bg-red-600'
+                  }`}
                 >
-                  Stop
+                  {recordingStatus === 'paused' ? 'Save' : 'Stop'}
                 </button>
               </>
             )}
