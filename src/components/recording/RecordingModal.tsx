@@ -24,6 +24,9 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
 
   // Handle modal close attempt
   const handleClose = () => {
+    if (recordingStatus === 'recording') {
+      pauseRecording() // Pause the recording
+    }
     if (recordingStatus !== 'idle') {
       setCurrentDialog('close')
     } else {
@@ -33,6 +36,9 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
 
   // Handle stop button click
   const handleStop = () => {
+    if (recordingStatus === 'recording') {
+      pauseRecording() // Automatically pause the recording
+    }
     setCurrentDialog('save')
   }
 
@@ -42,9 +48,8 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
     
     setIsSaving(true)
     try {
-      // Here we'll handle actual file saving later
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulated delay
-      
+      // Simulate saving
+      await new Promise(resolve => setTimeout(resolve, 1000))
       // Reset everything after saving
       stopRecording()
       setCurrentDialog('none')
@@ -63,7 +68,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
     
     setIsSaving(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulated delay
+      await new Promise(resolve => setTimeout(resolve, 1000)) 
       stopRecording()
       setIsSaving(false)
       onClose()
@@ -83,6 +88,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
   const handleConfirmDiscard = () => {
     stopRecording()
     setCurrentDialog('none')
+    onClose() // Close the modal after discarding the recording
   }
 
   const startRecording = async () => {
