@@ -13,16 +13,42 @@ type DialogType = 'none' | 'save' | 'close' | 'discard'
 export default function RecordingModal({ isOpen, onClose }: RecordingModalProps) {
   // Core states for recording
   const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>('idle')
-  const [duration, setDuration] = useState(0)
+  const [elapsedTime, setElapsedTime] = useState(0)
   const [isLightColor, setIsLightColor] = useState(false)
   const [currentDialog, setCurrentDialog] = useState<DialogType>('none')
   const [filename, setFilename] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [isExiting, setIsExiting] = useState(false) // Track if save was triggered from exit
+  const [isExiting, setIsExiting] = useState(false)
   
-  // Refs for audio handling
+  // Refs for audio handling and timers
   const streamRef = useRef<MediaStream | null>(null)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const timerRef = useRef<{ timer: NodeJS.Timer | null; color: NodeJS.Timer | null } | null>(null)
+
+  // Timer functions
+  const startTimer = () => {
+    const startTime = Date.now() - elapsedTime
+    const timer = setInterval(() => {
+      setElapsedTime(Date.now() - startTime)
+    }, 10) // Update time every 10ms
+
+    // Separate interval for color transition
+    const colorInterval = setInterval(() => {
+      setIsLightColor(prev => !prev)
+    }, 1500) // Color toggle every 1.5s
+
+    // Store both intervals in ref
+    timerRef.current = { timer, color: colorInterval }
+  }
+
+  const stopTimer = () => {
+    if (timerRef.current?.timer) {
+      clearInterval(timerRef.current.timer)
+    }
+    if (timerRef.current?.color) {
+      clearInterval(timerRef.current.color)
+    }
+    timerRef.current = null
+  }
 
   // Handle close button click
   const handleClose = () => {
@@ -30,24 +56,24 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
       pauseRecording()
     }
     if (recordingStatus !== 'idle') {
-      setIsExiting(true) // Mark that we're in exit flow
+      setIsExiting(true)
       setCurrentDialog('close')
     } else {
       onClose()
     }
   }
 
-  // Initialize save dialog (either for normal save or exit)
+  // Initialize save dialog
   const initiateSave = (isExiting: boolean) => {
     if (recordingStatus === 'recording') {
-      pauseRecording() // Pause recording first if it's still recording
+      pauseRecording()
     }
     setIsExiting(isExiting)
     setCurrentDialog('save')
     setFilename('')
   }
 
-  // Handle save button click from normal flow
+  // Handle save button click
   const handleSave = async () => {
     if (!filename.trim()) return
     
@@ -57,14 +83,12 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
         ? filename 
         : `${filename}.mp3`
       
-      // Simulate save - replace with actual save logic
       await new Promise(resolve => setTimeout(resolve, 1000))
       stopRecording()
       setCurrentDialog('none')
       setFilename('')
       setIsSaving(false)
       
-      // Close modal if this was triggered from exit flow
       if (isExiting) {
         onClose()
       }
@@ -93,12 +117,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
       setRecordingStatus('recording')
-      
-      // Start timer and color toggle
-      timerRef.current = setInterval(() => {
-        setDuration(prev => prev + 1)
-        setIsLightColor(prev => !prev) // Toggle timer color
-      }, 2500) // Slower color toggle
+      startTimer()
     } catch (error) {
       console.error('Error accessing microphone:', error)
       alert('Could not access microphone')
@@ -111,9 +130,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
       streamRef.current.getAudioTracks().forEach(track => {
         track.enabled = false
       })
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-      }
+      stopTimer()
       setRecordingStatus('paused')
     }
   }
@@ -124,10 +141,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
       streamRef.current.getAudioTracks().forEach(track => {
         track.enabled = true
       })
-      timerRef.current = setInterval(() => {
-        setDuration(prev => prev + 1)
-        setIsLightColor(prev => !prev) // Toggle timer color
-      }, 1000)
+      startTimer()
       setRecordingStatus('recording')
     }
   }
@@ -138,25 +152,30 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
       streamRef.current.getTracks().forEach(track => track.stop())
       streamRef.current = null
     }
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
-    }
-    setDuration(0)
+    stopTimer()
+    setElapsedTime(0)
     setRecordingStatus('idle')
   }
 
-  // Format duration display
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
+  // Format elapsed time display
+  const formatTime = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000)
+    const mins = Math.floor(totalSeconds / 60)
+    const secs = totalSeconds % 60
+    const ms = Math.floor((milliseconds % 1000) / 10)
+    return (
+      <>
+        {mins > 0 && `${mins}:`}
+        {secs.toString().padStart(2, '0')}
+        <span className="text-3xl">:{ms.toString().padStart(2, '0')}</span>
+      </>
+    )
   }
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
+      stopTimer()
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop())
       }
@@ -270,13 +289,13 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
           <div className="relative w-48 h-48 mx-auto mb-8">
             <div className="absolute inset-0 rounded-full bg-white flex items-center justify-center">
               <span 
-                className={`text-5xl font-mono transition-all duration-[3000ms] ease-in-out ${
+                className={`text-5xl font-mono transition-all duration-[4000ms] ease-in-out ${
                   recordingStatus === 'recording' 
-                    ? isLightColor ? 'text-[rgba(217, 230, 254, 1)' : 'text-blue-600'
+                    ? isLightColor ? 'text-[#d9e6fe]' : 'text-[#3473ef]'
                     : 'text-gray-400'
                 }`}
               >
-                {formatTime(duration)}
+                {formatTime(elapsedTime)}
               </span>
             </div>
 
