@@ -1,16 +1,19 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { type ModalType } from './types'
+import UploadRecording from './UploadRecording'
 
 interface RecordingModalProps {
   isOpen: boolean
   onClose: () => void
+  modalType: ModalType
 }
 
 type RecordingStatus = 'idle' | 'recording' | 'paused'
 type DialogType = 'none' | 'save' | 'close' | 'discard'
 
-export default function RecordingModal({ isOpen, onClose }: RecordingModalProps) {
+export default function RecordingModal({ isOpen, onClose, modalType }: RecordingModalProps) {
   // Core states for recording
   const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>('idle')
   const [elapsedTime, setElapsedTime] = useState(0)
@@ -22,21 +25,22 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
   
   // Refs for audio handling and timers
   const streamRef = useRef<MediaStream | null>(null)
-  const timerRef = useRef<{ timer: NodeJS.Timer | null; color: NodeJS.Timer | null } | null>(null)
+  const timerRef = useRef<{
+    timer: ReturnType<typeof setInterval> | null;
+    color: ReturnType<typeof setInterval> | null;
+  } | null>(null)
 
   // Timer functions
   const startTimer = () => {
     const startTime = Date.now() - elapsedTime
     const timer = setInterval(() => {
       setElapsedTime(Date.now() - startTime)
-    }, 10) // Update time every 10ms
+    }, 10)
 
-    // Separate interval for color transition
     const colorInterval = setInterval(() => {
       setIsLightColor(prev => !prev)
-    }, 1500) // Color toggle every 1.5s
+    }, 1500)
 
-    // Store both intervals in ref
     timerRef.current = { timer, color: colorInterval }
   }
 
@@ -184,11 +188,11 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
 
   if (!isOpen) return null
 
-  return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
+  const renderAutoRecording = () => (
+    <>
       {/* Save Dialog */}
       {currentDialog === 'save' && (
-        <div className="absolute bg-white rounded-lg p-6 shadow-xl z-[10000] w-96 animate-in slide-in-from-top-4 duration-200">
+        <div className="absolute bg-white rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08),0_-4px_12px_-2px_rgba(0,0,0,0.08)] z-[10000] w-96 animate-in slide-in-from-top-4 duration-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Save Recording</h3>
           <div className="relative">
             <input
@@ -223,7 +227,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
 
       {/* Close Dialog */}
       {currentDialog === 'close' && (
-        <div className="absolute bg-white rounded-lg p-6 shadow-xl z-[10000] w-96 animate-in zoom-in-95 duration-200">
+        <div className="absolute bg-white rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08),0_-4px_12px_-2px_rgba(0,0,0,0.08)] z-[10000] w-96 animate-in zoom-in-95 duration-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Recording in Progress</h3>
           <p className="text-gray-600 mb-6">What would you like to do?</p>
           <div className="flex flex-col gap-3">
@@ -245,7 +249,7 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
 
       {/* Discard Dialog */}
       {currentDialog === 'discard' && (
-        <div className="absolute bg-white rounded-lg p-6 shadow-xl z-[10000] w-96 animate-in zoom-in-95 duration-200">
+        <div className="absolute bg-white rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08),0_-4px_12px_-2px_rgba(0,0,0,0.08)] z-[10000] w-96 animate-in zoom-in-95 duration-200">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Confirm Discard</h3>
           <p className="text-gray-600 mb-6">Are you sure you want to discard this recording? This action cannot be undone.</p>
           <div className="flex justify-end gap-4">
@@ -353,6 +357,16 @@ export default function RecordingModal({ isOpen, onClose }: RecordingModalProps)
           </div>
         </div>
       </div>
+    </>
+  )
+
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
+      {modalType === 'upload' ? (
+        <UploadRecording onClose={onClose} />
+      ) : (
+        renderAutoRecording()
+      )}
     </div>
   )
 }

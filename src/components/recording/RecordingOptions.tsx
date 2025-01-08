@@ -2,9 +2,7 @@
 
 import { useState } from 'react'
 import RecordingModal from './RecordingModal'
-
-// Type for our modal states
-type ModalType = 'auto' | 'upload' | null;
+import { type ModalType } from './types'
 
 export default function RecordingOptions() {
   // Track which modal should be open (if any)
@@ -93,7 +91,7 @@ export default function RecordingOptions() {
       <RecordingModal 
         isOpen={modalType !== null}
         onClose={handleCloseModal}
-        type={modalType}
+        modalType={modalType}
       />
     </>
   )

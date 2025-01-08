@@ -1,0 +1,1 @@
+export type ModalType = 'auto' | 'upload' | null;
