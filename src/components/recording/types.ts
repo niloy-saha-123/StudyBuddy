@@ -1,8 +1,16 @@
-// Define the type of modal that can be shown
+// types.ts
 export type ModalType = 'auto' | 'upload' | null
 
-// Define the possible states for the recording process
 export type RecordingStatus = 'idle' | 'recording' | 'paused'
 
-// Define the types of dialogs that can appear in the recording modal
 export type DialogType = 'none' | 'save' | 'close' | 'discard'
+
+export interface Classroom {
+  id: string
+  name: string
+  lectureCount: number
+  lastActive: string
+  color: 'blue' | 'purple' | 'green' | 'pink'
+  isArchived?: boolean
+  archiveDate?: string // ISO string for archive date
+}
