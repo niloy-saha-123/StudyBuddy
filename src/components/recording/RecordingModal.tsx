@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { type ModalType } from './types'
+import { type ModalType, type RecordingStatus, type DialogType } from './types'
 import UploadRecording from './UploadRecording'
 
 interface RecordingModalProps {
@@ -10,11 +10,8 @@ interface RecordingModalProps {
   modalType: ModalType
 }
 
-type RecordingStatus = 'idle' | 'recording' | 'paused'
-type DialogType = 'none' | 'save' | 'close' | 'discard'
-
 export default function RecordingModal({ isOpen, onClose, modalType }: RecordingModalProps) {
-  // Core states for recording
+  // Core states for recording functionality
   const [recordingStatus, setRecordingStatus] = useState<RecordingStatus>('idle')
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isLightColor, setIsLightColor] = useState(false)
@@ -23,14 +20,14 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
   const [isSaving, setIsSaving] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   
-  // Refs for audio handling and timers
+  // Refs for managing audio stream and timers
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<{
     timer: ReturnType<typeof setInterval> | null;
     color: ReturnType<typeof setInterval> | null;
   } | null>(null)
 
-  // Timer functions
+  // Timer management functions
   const startTimer = () => {
     const startTime = Date.now() - elapsedTime
     const timer = setInterval(() => {
@@ -54,7 +51,50 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
     timerRef.current = null
   }
 
-  // Handle close button click
+  // Recording control functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      setRecordingStatus('recording')
+      startTimer()
+    } catch (error) {
+      console.error('Error accessing microphone:', error)
+      alert('Could not access microphone')
+    }
+  }
+
+  const pauseRecording = () => {
+    if (streamRef.current) {
+      streamRef.current.getAudioTracks().forEach(track => {
+        track.enabled = false
+      })
+      stopTimer()
+      setRecordingStatus('paused')
+    }
+  }
+
+  const resumeRecording = () => {
+    if (streamRef.current) {
+      streamRef.current.getAudioTracks().forEach(track => {
+        track.enabled = true
+      })
+      startTimer()
+      setRecordingStatus('recording')
+    }
+  }
+
+  const stopRecording = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop())
+      streamRef.current = null
+    }
+    stopTimer()
+    setElapsedTime(0)
+    setRecordingStatus('idle')
+  }
+
+  // Dialog management functions
   const handleClose = () => {
     if (recordingStatus === 'recording') {
       pauseRecording()
@@ -67,7 +107,6 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
     }
   }
 
-  // Initialize save dialog
   const initiateSave = (isExiting: boolean) => {
     if (recordingStatus === 'recording') {
       pauseRecording()
@@ -77,7 +116,6 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
     setFilename('')
   }
 
-  // Handle save button click
   const handleSave = async () => {
     if (!filename.trim()) return
     
@@ -103,65 +141,17 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
     }
   }
 
-  // Handle discard confirmation
   const handleDiscard = () => {
     setCurrentDialog('discard')
   }
 
-  // Confirm discard and close
   const handleConfirmDiscard = () => {
     stopRecording()
     setCurrentDialog('none')
     onClose()
   }
 
-  // Start new recording
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      streamRef.current = stream
-      setRecordingStatus('recording')
-      startTimer()
-    } catch (error) {
-      console.error('Error accessing microphone:', error)
-      alert('Could not access microphone')
-    }
-  }
-
-  // Pause current recording
-  const pauseRecording = () => {
-    if (streamRef.current) {
-      streamRef.current.getAudioTracks().forEach(track => {
-        track.enabled = false
-      })
-      stopTimer()
-      setRecordingStatus('paused')
-    }
-  }
-
-  // Resume paused recording
-  const resumeRecording = () => {
-    if (streamRef.current) {
-      streamRef.current.getAudioTracks().forEach(track => {
-        track.enabled = true
-      })
-      startTimer()
-      setRecordingStatus('recording')
-    }
-  }
-
-  // Stop recording and cleanup
-  const stopRecording = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop())
-      streamRef.current = null
-    }
-    stopTimer()
-    setElapsedTime(0)
-    setRecordingStatus('idle')
-  }
-
-  // Format elapsed time display
+  // Time formatting helper
   const formatTime = (milliseconds: number) => {
     const totalSeconds = Math.floor(milliseconds / 1000)
     const mins = Math.floor(totalSeconds / 60)
@@ -188,8 +178,102 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
 
   if (!isOpen) return null
 
-  const renderAutoRecording = () => (
-    <>
+  // Render the recording interface or upload interface based on modalType
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999]">
+      {modalType === 'upload' ? (
+        <UploadRecording onClose={onClose} />
+      ) : (
+        // Main recording modal content (implementation continued...)
+        <div className="bg-white rounded-lg p-6 w-96">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold text-gray-800">
+              {recordingStatus === 'recording' ? 'Recording in Progress' : 
+               recordingStatus === 'paused' ? 'Recording Paused' : 
+               'Voice Recording'}
+            </h2>
+            <button 
+              onClick={handleClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Timer Display */}
+          <div className="text-center">
+            <div className="relative w-48 h-48 mx-auto mb-8">
+              <div className="absolute inset-0 rounded-full bg-white flex items-center justify-center">
+                <span 
+                  className={`text-5xl font-mono transition-all duration-[4000ms] ease-in-out ${
+                    recordingStatus === 'recording' 
+                      ? isLightColor ? 'text-[#d9e6fe]' : 'text-[#3473ef]'
+                      : 'text-gray-400'
+                  }`}
+                >
+                  {formatTime(elapsedTime)}
+                </span>
+              </div>
+
+              {/* Recording Animation */}
+              {recordingStatus === 'recording' && (
+                <div className="absolute inset-0">
+                  <div className="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20 animate-ping"></div>
+                </div>
+              )}
+            </div>
+
+            {/* Status Text */}
+            <div className="text-gray-500 mb-6">
+              {recordingStatus === 'recording' ? 'Recording...' : 
+               recordingStatus === 'paused' ? 'Paused' : 
+               'Ready to record'}
+            </div>
+
+            {/* Control Buttons */}
+            <div className="flex gap-4 justify-center">
+              {recordingStatus === 'idle' ? (
+                <button
+                  onClick={startRecording}
+                  className="w-full py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Start Recording
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={recordingStatus === 'recording' ? pauseRecording : resumeRecording}
+                    className="flex-1 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    {recordingStatus === 'recording' ? 'Pause' : 'Resume'}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (recordingStatus === 'recording') {
+                        pauseRecording()
+                      }
+                      initiateSave(false)
+                    }}
+                    className={`flex-1 py-3 rounded-lg text-white transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                      recordingStatus === 'paused' 
+                        ? 'bg-blue-500 hover:bg-blue-600' 
+                        : 'bg-red-500 hover:bg-red-600'
+                    }`}
+                  >
+                    {recordingStatus === 'paused' ? 'Save' : 'Stop'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Save Dialog */}
       {currentDialog === 'save' && (
         <div className="absolute bg-white rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08),0_-4px_12px_-2px_rgba(0,0,0,0.08)] z-[10000] w-96 animate-in slide-in-from-top-4 duration-200">
@@ -267,105 +351,6 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
             </button>
           </div>
         </div>
-      )}
-
-      {/* Main Modal */}
-      <div className="bg-white rounded-lg p-6 w-96">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">
-            {recordingStatus === 'recording' ? 'Recording in Progress' : 
-             recordingStatus === 'paused' ? 'Recording Paused' : 
-             'Voice Recording'}
-          </h2>
-          <button 
-            onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Timer Display */}
-        <div className="text-center">
-          <div className="relative w-48 h-48 mx-auto mb-8">
-            <div className="absolute inset-0 rounded-full bg-white flex items-center justify-center">
-              <span 
-                className={`text-5xl font-mono transition-all duration-[4000ms] ease-in-out ${
-                  recordingStatus === 'recording' 
-                    ? isLightColor ? 'text-[#d9e6fe]' : 'text-[#3473ef]'
-                    : 'text-gray-400'
-                }`}
-              >
-                {formatTime(elapsedTime)}
-              </span>
-            </div>
-
-            {/* Recording Animation */}
-            {recordingStatus === 'recording' && (
-              <div className="absolute inset-0">
-                <div className="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20 animate-ping"></div>
-              </div>
-            )}
-          </div>
-
-          {/* Status Text */}
-          <div className="text-gray-500 mb-6">
-            {recordingStatus === 'recording' ? 'Recording...' : 
-             recordingStatus === 'paused' ? 'Paused' : 
-             'Ready to record'}
-          </div>
-
-          {/* Control Buttons */}
-          <div className="flex gap-4 justify-center">
-            {recordingStatus === 'idle' ? (
-              <button
-                onClick={startRecording}
-                className="w-full py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Start Recording
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={recordingStatus === 'recording' ? pauseRecording : resumeRecording}
-                  className="flex-1 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  {recordingStatus === 'recording' ? 'Pause' : 'Resume'}
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (recordingStatus === 'recording') {
-                      pauseRecording()
-                    }
-                    initiateSave(false)
-                  }}
-                  className={`flex-1 py-3 rounded-lg text-white transition-all hover:scale-[1.02] active:scale-[0.98] ${
-                    recordingStatus === 'paused' 
-                      ? 'bg-blue-500 hover:bg-blue-600' 
-                      : 'bg-red-500 hover:bg-red-600'
-                  }`}
-                >
-                  {recordingStatus === 'paused' ? 'Save' : 'Stop'}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </>
-  )
-
-  return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
-      {modalType === 'upload' ? (
-        <UploadRecording onClose={onClose} />
-      ) : (
-        renderAutoRecording()
       )}
     </div>
   )
