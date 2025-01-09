@@ -6,11 +6,16 @@ interface UploadRecordingProps {
   onClose: () => void
 }
 
+type UploadStatus = 'idle' | 'transcribing' | 'success' | 'error';
+
 export default function UploadRecording({ onClose }: UploadRecordingProps) {
   // States for handling drag and drop
   const [isDragging, setIsDragging] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [transcription, setTranscription] = useState<string | null>(null)
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle')
 
   // Ref for the hidden file input
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -37,9 +42,16 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
   // Handle file selection
   const handleFile = (file: File) => {
     setError(null)
+    setTranscription(null)
     
     if (validateFile(file)) {
       setFile(file)
+      // Create URL for audio preview
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl)
+      }
+      const newAudioUrl = URL.createObjectURL(file)
+      setAudioUrl(newAudioUrl)
     }
   }
 
@@ -79,30 +91,54 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
     fileInputRef.current?.click()
   }
 
-  // Handle upload
-  const handleUpload = async () => {
-    if (!file) return
+  // Handle transcription
+  const handleTranscribe = async () => {
+    if (!file) return;
     
     try {
-      // Here you'll handle the actual file upload
-      console.log('Uploading file:', file)
-      // After successful upload
-      onClose()
+      setUploadStatus('transcribing');
+      setError(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Transcription failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setTranscription(data.transcription);
+      setUploadStatus('success');
     } catch (error) {
-      setError('Failed to upload file')
+      console.error('Transcription error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to transcribe audio');
+      setUploadStatus('error');
     }
-  }
+  };
+
+  // Cleanup on unmount
+  const handleClose = () => {
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+    }
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
-      <div className="bg-white rounded-lg p-6 w-96">
+      <div className="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-800">
             Upload Recording
           </h2>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,9 +186,31 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
           )}
         </div>
 
+        {/* Audio Preview */}
+        {audioUrl && (
+          <div className="mb-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Preview</h3>
+            <audio 
+              controls 
+              src={audioUrl}
+              className="w-full"
+            />
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <p className="text-sm text-red-500 mb-4">{error}</p>
+        )}
+
+        {/* Transcription Result */}
+        {transcription && (
+          <div className="mb-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Transcription</h3>
+            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
+              {transcription}
+            </p>
+          </div>
         )}
 
         {/* Hidden File Input */}
@@ -167,18 +225,20 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
         {/* Action Buttons */}
         <div className="flex gap-4 justify-end">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
           >
             Cancel
           </button>
-          <button
-            onClick={handleUpload}
-            disabled={!file}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Upload
-          </button>
+          {file && !transcription && (
+            <button
+              onClick={handleTranscribe}
+              disabled={uploadStatus === 'transcribing'}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {uploadStatus === 'transcribing' ? 'Transcribing...' : 'Transcribe'}
+            </button>
+          )}
         </div>
       </div>
     </div>
