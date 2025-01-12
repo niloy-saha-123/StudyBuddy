@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
+import { Recording, UploadStatus } from './types'
 
 interface UploadRecordingProps {
   onClose: () => void
 }
-
-type UploadStatus = 'idle' | 'transcribing' | 'success' | 'error';
 
 export default function UploadRecording({ onClose }: UploadRecordingProps) {
   // States for handling drag and drop
@@ -55,6 +54,68 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
     }
   }
 
+  // Handle transcription
+  const handleTranscribe = async () => {
+    if (!file) return;
+    
+    try {
+      setUploadStatus('transcribing');
+      setError(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Transcription failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setTranscription(data.transcription);
+      setUploadStatus('success');
+    } catch (error) {
+      console.error('Transcription error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to transcribe audio');
+      setUploadStatus('error');
+    }
+  };
+
+  // Save recording to localStorage
+  const saveRecordingToLocalStorage = useCallback(() => {
+    if (!file || !audioUrl) return;
+
+    try {
+      // Create the recording object
+      const newRecording: Recording = {
+        id: crypto.randomUUID(),
+        audioBlob: file,
+        audioUrl: URL.createObjectURL(file),
+        transcription: transcription,
+        createdAt: new Date(),
+        title: file.name || `Uploaded Recording ${new Date().toLocaleString()}`
+      };
+
+      // Get existing recordings
+      const savedRecordings = JSON.parse(localStorage.getItem('voiceRecordings') || '[]');
+      
+      // Add new recording
+      const updatedRecordings = [...savedRecordings, newRecording];
+      
+      // Save back to localStorage
+      localStorage.setItem('voiceRecordings', JSON.stringify(updatedRecordings));
+
+      alert('Recording saved successfully!');
+      onClose();
+    } catch (err) {
+      console.error('Error saving recording:', err);
+      setError('Failed to save recording');
+    }
+  }, [file, audioUrl, transcription, onClose]);
+
   // Handle drag events
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -91,43 +152,13 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
     fileInputRef.current?.click()
   }
 
-  // Handle transcription
-  const handleTranscribe = async () => {
-    if (!file) return;
-    
-    try {
-      setUploadStatus('transcribing');
-      setError(null);
-
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Transcription failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setTranscription(data.transcription);
-      setUploadStatus('success');
-    } catch (error) {
-      console.error('Transcription error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to transcribe audio');
-      setUploadStatus('error');
-    }
-  };
-
   // Cleanup on unmount
   const handleClose = () => {
     if (audioUrl) {
-      URL.revokeObjectURL(audioUrl);
+      URL.revokeObjectURL(audioUrl)
     }
-    onClose();
-  };
+    onClose()
+  }
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
@@ -165,7 +196,6 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
             }`}
         >
           {file ? (
-            // Show selected file
             <>
               <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -173,7 +203,6 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
               <p className="text-sm text-gray-600">{file.name}</p>
             </>
           ) : (
-            // Show upload instructions
             <>
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -237,6 +266,14 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploadStatus === 'transcribing' ? 'Transcribing...' : 'Transcribe'}
+            </button>
+          )}
+          {file && (
+            <button
+              onClick={saveRecordingToLocalStorage}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+            >
+              Save Recording
             </button>
           )}
         </div>

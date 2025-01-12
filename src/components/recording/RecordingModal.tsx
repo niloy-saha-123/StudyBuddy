@@ -14,6 +14,8 @@ type Recording = {
   transcription: string | null;
   isTranscribing?: boolean;
   error?: string;
+  createdAt: Date;
+  title?: string;
 };
 
 interface RecordingModalProps {
@@ -90,7 +92,8 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
             id: crypto.randomUUID(),
             audioBlob,
             audioUrl,
-            transcription: null
+            transcription: null,
+            createdAt: new Date(),
           },
         ]);
 
@@ -114,8 +117,37 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
       setRecordingStatus('idle');
       stopTimer();
       setElapsedTime(0);
+
+      // Create a callback to handle saving the recording
+      const saveRecording = () => {
+        const newRecording = recordings[recordings.length - 1]; // Get the most recent recording
+        
+        if (newRecording) {
+          // Prepare the recording to match the format in RecordingsPage
+          const recordingToSave = {
+            id: newRecording.id,
+            audioBlob: newRecording.audioBlob,
+            audioUrl: URL.createObjectURL(newRecording.audioBlob),
+            transcription: newRecording.transcription,
+            createdAt: new Date(),
+            title: `Recording from ${new Date().toLocaleString()}`,
+          };
+
+          // Retrieve existing recordings from local storage
+          const savedRecordings = JSON.parse(localStorage.getItem('voiceRecordings') || '[]');
+
+          // Add the new recording to the list
+          const updatedRecordings = [...savedRecordings, recordingToSave];
+
+          // Save the updated list to local storage
+          localStorage.setItem('voiceRecordings', JSON.stringify(updatedRecordings));
+        }
+      };
+
+      // Use a timeout to ensure the recording is fully stopped
+      setTimeout(saveRecording, 100);
     }
-  }, []);
+  }, [recordings]);
 
   const pauseRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -182,6 +214,32 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
         )
       );
       console.error('Transcription error:', err);
+    }
+  }, []);
+
+  const saveRecordingToLocalStorage = useCallback((recording: Recording) => {
+    try {
+      // Retrieve existing recordings from local storage
+      const savedRecordings = JSON.parse(localStorage.getItem('voiceRecordings') || '[]');
+  
+      // Prepare the recording to match the format in RecordingsPage
+      const recordingToSave = {
+        ...recording,
+        title: recording.title || `Recording from ${new Date().toLocaleString()}`,
+        audioUrl: URL.createObjectURL(recording.audioBlob)
+      };
+  
+      // Add the new recording to the list
+      const updatedRecordings = [...savedRecordings, recordingToSave];
+  
+      // Save the updated list to local storage
+      localStorage.setItem('voiceRecordings', JSON.stringify(updatedRecordings));
+  
+      // Optionally, provide user feedback
+      alert('Recording saved successfully!');
+    } catch (error) {
+      console.error('Error saving recording:', error);
+      alert('Failed to save recording');
     }
   }, []);
 
@@ -348,25 +406,31 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
                     src={recording.audioUrl}
                     className="w-full mb-2"
                   />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => transcribeAudio(recording)}
-                      disabled={recording.isTranscribing}
-                      className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
-                        recording.isTranscribing
-                          ? 'bg-gray-100 text-gray-400'
-                          : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                      }`}
-                    >
-                      {recording.isTranscribing ? 'Transcribing...' : 'Transcribe'}
-                    </button>
-                    <button
-                      onClick={() => deleteRecording(recording.id)}
-                      className="px-3 py-1.5 text-sm rounded-md bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                 <div className="flex gap-2">
+  <button
+    onClick={() => transcribeAudio(recording)}
+    disabled={recording.isTranscribing}
+    className={`flex-1 px-3 py-1.5 text-sm rounded-md transition-colors ${
+      recording.isTranscribing
+        ? 'bg-gray-100 text-gray-400'
+        : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+    }`}
+  >
+    {recording.isTranscribing ? 'Transcribing...' : 'Transcribe'}
+  </button>
+  <button
+    onClick={() => saveRecordingToLocalStorage(recording)}
+    className="flex-1 px-3 py-1.5 text-sm rounded-md bg-green-100 text-green-600 hover:bg-green-200 transition-colors"
+  >
+    Save
+  </button>
+  <button
+    onClick={() => deleteRecording(recording.id)}
+    className="px-3 py-1.5 text-sm rounded-md bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+  >
+    Delete
+  </button>
+</div>
                   {recording.error && (
                     <p className="mt-2 text-sm text-red-500">{recording.error}</p>
                   )}

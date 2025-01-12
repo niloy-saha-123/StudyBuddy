@@ -1,12 +1,25 @@
-// Navigation item types for sidebar
+// Navigation Types
 export type NavigationItem = 'home' | 'recordings' | 'favourites' | 'trash'
 
-// Recording related types
-export type ModalType = 'auto' | 'upload' | null
+// Recording and Modal Types
+export type ModalType = 'record' | 'upload' | 'auto' | null
 export type RecordingStatus = 'idle' | 'recording' | 'paused'
 export type DialogType = 'none' | 'create' | 'rename' | 'delete' | 'save' | 'close' | 'discard'
+export type UploadStatus = 'idle' | 'transcribing' | 'success' | 'error'
 
-// Main classroom data structure
+// Recording Type
+export type Recording = {
+  id: string;
+  audioBlob: Blob | File;
+  audioUrl: string;
+  transcription: string | null;
+  isTranscribing?: boolean;
+  error?: string;
+  createdAt: Date;
+  title?: string;
+};
+
+// Classroom Types
 export interface Classroom {
   id: string
   name: string
@@ -14,12 +27,12 @@ export interface Classroom {
   lastActive: string
   color: 'blue' | 'purple' | 'green' | 'pink'
   isFavourite?: boolean
-  deletedAt?: string  // Timestamp for when item was moved to trash
+  deletedAt?: string
   originalIndex?: number
   itemsBefore?: string[]
 }
 
-// Required actions for classroom management
+// Classroom Actions Interface
 export interface ClassroomActions {
   updateClassroomName: (id: string, newName: string) => void
   addToFavourites: (classroom: Classroom) => void
@@ -27,7 +40,7 @@ export interface ClassroomActions {
   moveToTrash: (classroom: Classroom) => void
 }
 
-// Context state type definition
+// App State Context Type
 export interface AppStateContextType extends ClassroomActions {
   classrooms: Classroom[]
   favourites: Classroom[]
