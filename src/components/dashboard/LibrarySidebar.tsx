@@ -94,7 +94,7 @@ export default function LibrarySidebar() {
         <div className="h-full flex flex-col">
           {/* Logo/Header */}
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-blue-600">StudyBuddy</h2>
+            <h2 className="text-2xl font-bold text-blue-600">Dashboard</h2>
           </div>
 
           {/* Navigation Menu */}

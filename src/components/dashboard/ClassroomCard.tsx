@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Classroom } from '@/components/recording/types'
 
+// Define props extending Classroom type
 interface ClassroomCardProps extends Classroom {
-  // Required props for standard cards
+  // Required actions for standard cards
   onRename: () => void
   onToggleFavourite: () => void
   onDelete: () => void
   
-  // Optional props for trash functionality
+  // Optional actions for trash functionality
   isInTrash?: boolean
   onRestore?: () => void
   onPermanentDelete?: () => void
@@ -30,10 +32,15 @@ export default function ClassroomCard({
   onToggleFavourite,
   onPermanentDelete
 }: ClassroomCardProps) {
-  // States for menu and dialogs
+  // Navigation hook
+  const router = useRouter()
+
+  // Local state for managing UI elements
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showPermanentDeleteConfirm, setShowPermanentDeleteConfirm] = useState(false)
+  
+  // Ref for handling click outside of menu
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Handle click outside to close menu
@@ -59,6 +66,7 @@ export default function ClassroomCard({
     return daysRemaining > 0 ? daysRemaining : 0
   }
 
+  // Color variants for different card styles
   const colorVariants = {
     blue: 'from-blue-400 to-blue-600',
     purple: 'from-purple-400 to-purple-600',
@@ -68,10 +76,22 @@ export default function ClassroomCard({
 
   return (
     <>
+      {/* Main Card Container */}
       <div className={`group relative bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 ${
         isInTrash ? 'opacity-75' : ''
       }`}>
-        <div className="p-6">
+        {/* Card Content - Clickable Area */}
+        <div 
+          className="p-6 cursor-pointer"
+          onClick={(e) => {
+            // Prevent navigation if clicking menu or its items
+            if (menuRef.current?.contains(e.target as Node)) return
+            // Navigate to classroom page if not in trash
+            if (!isInTrash) {
+              router.push(`/classroom/${id}`)
+            }
+          }}
+        >
           <div className="flex justify-between items-start mb-4">
             {/* Notebook Icon */}
             <div className={`w-12 h-14 relative rounded-lg bg-gradient-to-br ${colorVariants[color]} shadow-lg`}>
