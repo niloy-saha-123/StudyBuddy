@@ -72,9 +72,26 @@ const Header = () => {
               About
             </Link>
           </nav>
-
-          {/* Right section: Authentication Buttons */}
-          <div className="flex items-center space-x-6">
+ {/* Right section: Authentication Buttons */}
+ <div className="flex items-center space-x-6">
+            {/* Login button */}
+            <Link 
+              href="/sign-in" 
+              className="text-lg px-6 py-2 text-blue-300 hover:text-white 
+                         transition-colors duration-300"
+            >
+              Login
+            </Link>
+            {/* Sign Up button */}
+            <Link 
+              href="/signup" 
+              className="text-lg px-6 py-2 bg-blue-500 text-white 
+                         rounded-md hover:bg-blue-400 
+                         transition-colors duration-300"
+            >
+              Sign Up
+            </Link>
+          
           
             
           </div>
