@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import ClassroomCard from '@/components/dashboard/ClassroomCard'
 import RecordingOptions from '@/components/recording/RecordingOptions'
@@ -8,7 +10,9 @@ import { useAppState } from '@/context/AppStateContext'
 import type { DialogType } from '@/components/recording/types'
 
 export default function DashboardPage() {
-  // Get state and functions from context
+  // Always call hooks at the top level
+  const router = useRouter();
+  const { isLoaded, userId } = useAuth();
   const { 
     classrooms, 
     setClassrooms,
@@ -16,18 +20,38 @@ export default function DashboardPage() {
     removeFromFavourites, 
     moveToTrash,
     updateClassroomName 
-  } = useAppState()
+  } = useAppState();
 
-  // Local state for dialogs and form
-  const [currentDialog, setCurrentDialog] = useState<DialogType>('none')
-  const [selectedClassroom, setSelectedClassroom] = useState<string | null>(null)
-  const [newClassroomName, setNewClassroomName] = useState('')
+  // Local state
+  const [currentDialog, setCurrentDialog] = useState<DialogType>('none');
+  const [selectedClassroom, setSelectedClassroom] = useState<string | null>(null);
+  const [newClassroomName, setNewClassroomName] = useState('');
+
+  // Auth check useEffect
+  useEffect(() => {
+    if (isLoaded && !userId) {
+      router.push('/sign-in');
+    }
+  }, [isLoaded, userId, router]);
+
+  // Early return for loading and unauthenticated states
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#14171F]">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!userId) {
+    return null;
+  }
 
   // Handle classroom creation
   const handleCreateClassroom = () => {
-    if (!newClassroomName.trim()) return
+    if (!newClassroomName.trim()) return;
 
-    const colors = ['blue', 'purple', 'green', 'pink'] as const
+    const colors = ['blue', 'purple', 'green', 'pink'] as const;
     const newClassroom = {
       id: Date.now().toString(),
       name: newClassroomName.trim(),
@@ -36,23 +60,22 @@ export default function DashboardPage() {
       color: colors[classrooms.length % colors.length],
       isFavourite: false,
       type: 'classroom' as const
-    }
+    };
 
-    setClassrooms([...classrooms, newClassroom])
-    setNewClassroomName('')
-    setCurrentDialog('none')
-  }
+    setClassrooms([...classrooms, newClassroom]);
+    setNewClassroomName('');
+    setCurrentDialog('none');
+  };
 
-  // Handle renaming a classroom
+  // Handle rename
   const handleRename = () => {
-    if (!newClassroomName.trim() || !selectedClassroom) return
+    if (!newClassroomName.trim() || !selectedClassroom) return;
 
-    updateClassroomName(selectedClassroom, newClassroomName.trim())
-    setNewClassroomName('')
-    setSelectedClassroom(null)
-    setCurrentDialog('none')
-  }
-
+    updateClassroomName(selectedClassroom, newClassroomName.trim());
+    setNewClassroomName('');
+    setSelectedClassroom(null);
+    setCurrentDialog('none');
+  };
   return (
     <DashboardLayout>
       <div>

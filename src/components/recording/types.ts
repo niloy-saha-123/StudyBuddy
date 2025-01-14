@@ -27,6 +27,7 @@ export interface RecordingWithMeta extends Omit<Recording, 'audioBlob'> {
   deletedAt?: string
   originalIndex?: number
   itemsBefore?: string[]
+  classroomId?: string;
 }
 
 // Classroom Types

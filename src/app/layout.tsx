@@ -1,8 +1,10 @@
+// src/app/layout.tsx
+import { ClerkProvider } from '@clerk/nextjs'
+import { AppStateProvider } from '@/context/AppStateContext'
 import localFont from "next/font/local"
-import { AppStateProvider } from "@/context/AppStateContext"
 import "./globals.css"
 
-// Font setup for the entire application
+// Font setup
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -22,11 +24,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <AppStateProvider>
-          {children}
-        </AppStateProvider>
-      </body>
+      <ClerkProvider>
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+          <AppStateProvider>
+            {children}
+          </AppStateProvider>
+        </body>
+      </ClerkProvider>
     </html>
   )
 }
