@@ -2,9 +2,22 @@
 
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useAppState } from '@/context/AppStateContext'
+import { useRouter } from 'next/navigation'
 
 export default function TrashPage() {
+  const router = useRouter()
   const { trashedItems, restoreFromTrash, deletePermanently } = useAppState()
+
+  // Format date helper
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date)
+  }
 
   return (
     <DashboardLayout>
@@ -39,24 +52,45 @@ export default function TrashPage() {
                 <div className="flex items-center justify-between">
                   {/* Left side with icon and info */}
                   <div className="flex items-center gap-4">
-                    {/* Icon */}
-                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 shadow-sm flex items-center justify-center`}>
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
+                    {/* Icon - Different for classroom and recording */}
+                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${
+                      item.type === 'classroom' ? 'from-blue-400 to-blue-600' : 'from-purple-400 to-purple-600'
+                    } shadow-sm flex items-center justify-center`}>
+                      {item.type === 'classroom' ? (
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      ) : (
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                      )}
                     </div>
                     
                     {/* Info */}
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {item.type === 'classroom' ? item.name : (item.title || `Recording from ${formatDate(item.createdAt)}`)}
+                        </h3>
+                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">
+                          {item.type === 'classroom' ? 'Classroom' : 'Recording'}
+                        </span>
+                      </div>
                       <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span>{item.lectureCount} Lectures</span>
-                          <span>•</span>
-                          <span>Last Active: {item.lastActive}</span>
-                        </div>
+                        {item.type === 'classroom' ? (
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <span>{item.lectureCount} Lectures</span>
+                            <span>•</span>
+                            <span>Last Active: {item.lastActive}</span>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">
+                            Recorded on {formatDate(item.createdAt)}
+                          </p>
+                        )}
                         {item.deletedAt && (
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-red-500">
                             {Math.ceil((new Date(item.deletedAt).getTime() + (30 * 24 * 60 * 60 * 1000) - new Date().getTime()) / (1000 * 60 * 60 * 24))} days until permanent deletion
                           </span>
                         )}

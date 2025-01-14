@@ -6,11 +6,11 @@ import UploadRecording from './UploadRecording'
 import { type ModalType } from './types'
 
 export default function RecordingOptions() {
-  // Track which modal should be open (if any)
+  // Track which modal should be open (can be 'record', 'upload', or null)
   const [modalType, setModalType] = useState<ModalType>(null)
 
   // Handler functions for opening different modals
-  const handleAutoRecord = () => setModalType('auto')
+  const handleAutoRecord = () => setModalType('record')
   const handleUpload = () => setModalType('upload')
   const handleCloseModal = () => setModalType(null)
 
@@ -86,12 +86,12 @@ export default function RecordingOptions() {
         </div>
       </div>
 
-      {/* Modals - Render based on modalType */}
-      {modalType === 'auto' && (
+      {/* Modal Components - Only render when their respective modalType is active */}
+      {modalType === 'record' && (
         <RecordingModal 
           isOpen={true}
           onClose={handleCloseModal}
-          modalType={modalType}
+          modalType="record"
         />
       )}
       

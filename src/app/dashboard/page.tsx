@@ -34,7 +34,8 @@ export default function DashboardPage() {
       lectureCount: 0,
       lastActive: 'Just created',
       color: colors[classrooms.length % colors.length],
-      isFavourite: false
+      isFavourite: false,
+      type: 'classroom' as const
     }
 
     setClassrooms([...classrooms, newClassroom])
