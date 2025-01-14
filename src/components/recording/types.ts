@@ -64,6 +64,7 @@ export interface RecordingActions {
 }
 
 // App State Context Type
+// App State Context Type
 export interface AppStateContextType extends ClassroomActions, RecordingActions {
   classrooms: Classroom[]
   recordings: RecordingWithMeta[]
@@ -74,4 +75,6 @@ export interface AppStateContextType extends ClassroomActions, RecordingActions 
   setClassrooms: (classrooms: Classroom[]) => void
   setRecordings: (recordings: RecordingWithMeta[]) => void
   addRecording: (recording: RecordingWithMeta) => void
+  addRecordingToClassroom: (recordingId: string, classroomId: string) => void
+  removeRecordingFromClassroom: (recordingId: string, classroomId: string) => void
 }
