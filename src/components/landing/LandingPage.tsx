@@ -74,11 +74,11 @@ const LandingPage = () => {
             <div className={`space-y-2 transform transition-all duration-1000 delay-300 
                            ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight">
-                Turn Lectures Into
+                Make Learning
               </h1>
               <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r 
                            from-blue-400 to-blue-600 text-transparent bg-clip-text">
-                Knowledge
+                Easier
               </h1>
             </div>
 
