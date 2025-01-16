@@ -2,21 +2,17 @@
 
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import LandingPage from '@/components/landing/LandingPage';
 
 export default function Home() {
   const { isLoaded, userId } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (isLoaded) {
-      if (!userId) {
-        router.push('/sign-in');
-      } else {
-        router.push('/dashboard');
-      }
-    }
-  }, [isLoaded, userId, router]);
+  // If user is already logged in, redirect to dashboard
+  if (isLoaded && userId) {
+    router.push('/dashboard');
+    return null;
+  }
 
   // Show loading state while auth is being checked
   if (!isLoaded) {
@@ -27,6 +23,6 @@ export default function Home() {
     );
   }
 
-  // Return null as we're handling navigation in useEffect
-  return null;
+  // Show landing page for non-authenticated users
+  return <LandingPage />;
 }

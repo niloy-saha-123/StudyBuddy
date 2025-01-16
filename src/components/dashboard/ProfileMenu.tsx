@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useClerk, useUser } from '@clerk/nextjs'
 
 interface ProfileMenuProps {
   userName: string
@@ -11,6 +12,9 @@ interface ProfileMenuProps {
 export default function ProfileMenu({ userName, userEmail }: ProfileMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const { signOut } = useClerk()
+  const { user } = useUser()
 
   // Handle click outside to close menu
   useEffect(() => {
@@ -23,6 +27,25 @@ export default function ProfileMenu({ userName, userEmail }: ProfileMenuProps) {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    await signOut()
+    router.push('/') // Redirect to landing page
+  }
+
+  // Handle profile deletion
+  const handleDeleteProfile = async () => {
+    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      try {
+        await user?.delete()
+        router.push('/') // Redirect to landing page after deletion
+      } catch (error) {
+        console.error('Error deleting profile:', error)
+        alert('Failed to delete profile. Please try again.')
+      }
+    }
+  }
 
   return (
     <div className="relative" ref={menuRef}>
@@ -47,12 +70,26 @@ export default function ProfileMenu({ userName, userEmail }: ProfileMenuProps) {
 
           {/* Menu Items */}
           <div className="py-2">
-            {/* Profile Settings */}
-            <button className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3">
+            {/* Profile Settings - Opens Clerk User Profile */}
+            <button 
+              onClick={() => window.location.href = '/user-profile'} 
+              className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+            >
               <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               Profile Settings
+            </button>
+
+            {/* Delete Profile */}
+            <button 
+              onClick={handleDeleteProfile}
+              className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete Profile
             </button>
 
             {/* Account Settings */}
@@ -81,8 +118,11 @@ export default function ProfileMenu({ userName, userEmail }: ProfileMenuProps) {
             </button>
 
             <div className="border-t border-gray-200 mt-2 pt-2">
-              {/* Logout */}
-              <button className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3">
+              {/* Sign Out */}
+              <button 
+                onClick={handleSignOut}
+                className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
