@@ -9,6 +9,7 @@ import {
   ChevronRight 
 } from 'lucide-react'
 
+
 const LandingPage = () => {
   const [typedText, setTypedText] = useState('')
   const fullText = 'Your AI powered studybuddy is here'

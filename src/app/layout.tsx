@@ -1,6 +1,8 @@
+'use client'
 // src/app/layout.tsx
 import { ClerkProvider } from '@clerk/nextjs'
 import { AppStateProvider } from '@/context/AppStateContext'
+import Header from '@/components/layout/Header'
 import localFont from "next/font/local"
 import "./globals.css"
 
@@ -25,9 +27,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <ClerkProvider>
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#14171F]`}>
           <AppStateProvider>
-            {children}
+            <Header />
+            <main className="flex min-h-screen flex-col pt-20"> {/* Added pt-20 to account for fixed header height */}
+              {children}
+            </main>
           </AppStateProvider>
         </body>
       </ClerkProvider>
