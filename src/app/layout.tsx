@@ -32,12 +32,20 @@ export default function RootLayout({
   return (
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     <html lang="en">
       <ClerkProvider>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#14171F]`}>
           <AppStateProvider>
             <Header />
             <main className="flex min-h-screen flex-col pt-20"> {/* Added pt-20 to account for fixed header height */}
+=======
+    <ClerkProvider>
+      <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+        <body className="min-h-screen bg-background antialiased">
+          <AppStateProvider>
+            <main className="relative flex min-h-screen flex-col">
+>>>>>>> Stashed changes
 =======
     <ClerkProvider>
       <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
