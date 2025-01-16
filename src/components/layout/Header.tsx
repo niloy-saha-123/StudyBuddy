@@ -94,7 +94,7 @@ const Header = () => {
           <div className="flex items-center space-x-6">
             {/* Login button */}
             <Link 
-              href="/login" 
+              href="/sign-in" 
               className="text-lg px-6 py-2 text-blue-300 hover:text-white 
                          transition-colors duration-300"
             >

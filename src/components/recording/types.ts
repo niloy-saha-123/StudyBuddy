@@ -78,4 +78,6 @@ export interface AppStateContextType extends ClassroomActions, RecordingActions 
   addRecording: (recording: RecordingWithMeta) => void
   addRecordingToClassroom: (recordingId: string, classroomId: string) => void
   removeRecordingFromClassroom: (recordingId: string, classroomId: string) => void
+  isDarkMode: boolean
+  toggleDarkMode: () => void
 }
