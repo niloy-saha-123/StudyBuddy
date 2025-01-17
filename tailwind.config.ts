@@ -6,11 +6,15 @@ export default {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: 'class', // Add this line to enable class-based dark mode
   theme: {
     extend: {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        // You can add dark mode specific colors if needed
+        'background-dark': "var(--background-dark)",
+        'foreground-dark': "var(--foreground-dark)",
       },
     },
   },

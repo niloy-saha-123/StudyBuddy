@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import LibrarySidebar from '@/components/dashboard/LibrarySidebar'
 import ProfileMenu from '@/components/dashboard/ProfileMenu'
+import GlobalLayout from '@/components/layout/GlobalLayout';
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -10,6 +11,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
+    <GlobalLayout>
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
@@ -22,10 +24,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            <ProfileMenu 
-              userName="John Doe"
-              userEmail="john@example.com"
-            />
+            <ProfileMenu />
           </div>
         </div>
       </header>
@@ -42,5 +41,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </main>
       </div>
     </div>
+    </GlobalLayout>
   )
 }

@@ -6,9 +6,12 @@ import {
   Brain, 
   BookOpen,
   Zap as Lightning,
-  ChevronRight 
+  ChevronRight,
+  Linkedin 
 } from 'lucide-react'
-
+import Image from 'next/image'
+import MohammedFarazKabbo from '/public/uploads/faraz.jpg'
+import NiloySaha from '/public/uploads/Niloy.jpg'
 
 const LandingPage = () => {
   const [typedText, setTypedText] = useState('')
@@ -51,6 +54,22 @@ const LandingPage = () => {
       icon: <Lightning className="w-6 h-6" />,
       title: "Instant Summaries",
       description: "Get key points and summaries instantly after recording"
+    }
+  ]
+
+  // Creators data
+  const creators = [
+    {
+      name: "Mohammed Faraz Kabbo",
+      linkedin: "https://www.linkedin.com/in/mohammed-faraz-kabbo/",
+      role: "BSc(Hons.) Computer Science @ York University",
+      photo: MohammedFarazKabbo
+    },
+    {
+      name: "Niloy Saha",
+      linkedin: "https://www.linkedin.com/in/niloysaha24/",
+      role: "BSc Computer Science & Data Analytics major @ Dickinson College ",
+      photo: NiloySaha
     }
   ]
 
@@ -116,9 +135,70 @@ const LandingPage = () => {
                           duration-1000 delay-1000 animate-float 
                           ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'}`}>
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent animate-gradient" />
-            {/* Add your app preview/demo here */}
-            <div className="relative z-10 flex items-center justify-center h-full">
-              <p className="text-gray-400">Dashboard Preview</p>
+            <div className="relative z-10 w-full h-full p-6 overflow-hidden">
+              {/* Mockup Dashboard Layout */}
+              <div className="grid grid-cols-3 gap-4 h-full">
+                {/* Sidebar */}
+                <div className="bg-[#14171F] rounded-xl p-4 col-span-1">
+                  <div className="mb-6">
+                    <h3 className="text-white font-semibold mb-2">Recordings</h3>
+                    <div className="space-y-2">
+                      {['Math Lecture', 'Biology Seminar', 'CS Workshop'].map((recording, index) => (
+                        <div key={index} className="bg-blue-500/10 p-2 rounded-lg flex items-center">
+                          <BookOpen className="w-5 h-5 text-blue-400 mr-2" />
+                          <span className="text-gray-300 text-sm">{recording}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Content Area */}
+                <div className="bg-[#14171F] rounded-xl p-6 col-span-2 flex flex-col">
+                  {/* Transcription Preview */}
+                  <div className="mb-6">
+                    <h3 className="text-white font-semibold mb-4">Live Transcription</h3>
+                    <div className="bg-blue-500/10 p-4 rounded-lg">
+                      <p className="text-gray-300 text-sm line-clamp-3">
+                        Professor Johnson explains the key concepts of quantum mechanics, 
+                        highlighting the wave-particle duality and its implications in modern physics...
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* AI Summary */}
+                  <div>
+                    <h3 className="text-white font-semibold mb-4">AI Generated Summary</h3>
+                    <div className="bg-blue-500/10 p-4 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <Brain className="w-5 h-5 text-blue-400 mr-2" />
+                        <span className="text-blue-300 font-medium">Key Insights</span>
+                      </div>
+                      <ul className="text-gray-300 text-sm space-y-1 list-disc list-inside">
+                        <li>Wave-particle duality of quantum mechanics</li>
+                        <li>Heisenberg uncertainty principle</li>
+                        <li>Quantum superposition explained</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Recording Controls */}
+                  <div className="mt-auto flex justify-between items-center">
+                    <div className="flex items-center space-x-2">
+                      <Mic className="w-6 h-6 text-blue-400" />
+                      <span className="text-gray-300">Recording: 00:23:45</span>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">
+                        <BookOpen className="w-5 h-5" />
+                      </button>
+                      <button className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600">
+                        <Mic className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -144,6 +224,54 @@ const LandingPage = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
                 <p className="text-gray-400">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Creators Section */}
+      <section className="py-20 bg-[#1a1f2e]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Meet the Creators
+            </h2>
+            <p className="text-gray-400">
+              The visionary minds behind your AI-powered study companion
+            </p>
+          </div>
+
+          <div className="flex justify-center space-x-12">
+            {creators.map((creator, index) => (
+              <div 
+                key={index} 
+                className="text-center p-8 bg-[#14171F] rounded-2xl shadow-lg transform transition-all duration-300 hover:scale-105"
+              >
+                <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden border-4 border-blue-500/30">
+                  <Image 
+                    src={creator.photo} 
+                    alt={creator.name} 
+                    width={128} 
+                    height={128} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  {creator.name}
+                </h3>
+                <p className="text-gray-400 mb-4">
+                  {creator.role}
+                </p>
+                <a 
+                  href={creator.linkedin} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  <Linkedin className="w-6 h-6 mr-2" />
+                  Connect on LinkedIn
+                </a>
               </div>
             ))}
           </div>

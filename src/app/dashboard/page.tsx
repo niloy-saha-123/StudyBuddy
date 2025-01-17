@@ -8,6 +8,11 @@ import ClassroomCard from '@/components/dashboard/ClassroomCard'
 import RecordingOptions from '@/components/recording/RecordingOptions'
 import { useAppState } from '@/context/AppStateContext'
 import type { DialogType } from '@/components/recording/types'
+import { DarkModeToggle, DarkModeStyles } from '@/components/DarkModeToggle'
+
+
+
+
 
 function DashboardContent() {
   const router = useRouter();
@@ -184,6 +189,8 @@ function DashboardContent() {
 export default function DashboardPage() {
   return (
     <DashboardLayout>
+        <DarkModeToggle />
+        <DarkModeStyles />
       <DashboardContent />
     </DashboardLayout>
   );

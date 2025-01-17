@@ -3,7 +3,7 @@
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useAppState } from '@/context/AppStateContext'
 import { useRouter } from 'next/navigation'
-
+import GlobalLayout from '@/components/layout/GlobalLayout';
 export default function TrashPage() {
   const router = useRouter()
   const { trashedItems, restoreFromTrash, deletePermanently } = useAppState()
@@ -20,6 +20,7 @@ export default function TrashPage() {
   }
 
   return (
+    <GlobalLayout>
     <DashboardLayout>
       <div>
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">Trash</h1>
@@ -120,5 +121,6 @@ export default function TrashPage() {
         )}
       </div>
     </DashboardLayout>
+    </GlobalLayout>
   )
 }

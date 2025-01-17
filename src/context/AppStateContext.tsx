@@ -8,9 +8,53 @@ import type {
   AppStateContextType 
 } from '@/components/recording/types'
 
+// Dark mode state with localStorage persistence
+const useDarkMode = () => {
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Safe localStorage check for dark mode preference
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('darkMode')
+        return saved ? JSON.parse(saved) : false
+      } catch (error) {
+        console.error('Error reading dark mode preference:', error)
+        return false
+      }
+    }
+    return false
+  })
+
+  // Dark Mode Toggle with localStorage persistence
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(prev => {
+      const newMode = !prev
+      try {
+        localStorage.setItem('darkMode', JSON.stringify(newMode))
+      } catch (error) {
+        console.error('Error saving dark mode preference:', error)
+      }
+      return newMode
+    })
+  }, [])
+
+  // Apply dark mode class to document
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [isDarkMode])
+
+  return { isDarkMode, toggleDarkMode }
+}
+
 const AppStateContext = createContext<AppStateContextType | null>(null)
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
+  // Dark mode state
+  const { isDarkMode, toggleDarkMode } = useDarkMode()
+
   // Main states
   const [classrooms, setClassrooms] = useState<Classroom[]>([])
   const [recordings, setRecordings] = useState<RecordingWithMeta[]>([])
@@ -41,6 +85,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   // Add new recording
   const addRecording = useCallback((recording: RecordingWithMeta) => {
     setRecordings(current => [recording, ...current])
+    
+    // Update localStorage
+    const storedRecordings = JSON.parse(localStorage.getItem('voiceRecordings') || '[]')
+    const updatedStoredRecordings = [recording, ...storedRecordings]
+    localStorage.setItem('voiceRecordings', JSON.stringify(updatedStoredRecordings))
   }, [])
 
   // Classroom functions
@@ -311,6 +360,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
+    // Include dark mode states
+    isDarkMode,
+    toggleDarkMode,
+
+    // Original context values
     classrooms,
     recordings,
     favourites,
@@ -331,6 +385,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setRecordings,
     addRecording
   }), [
+    isDarkMode,
+    toggleDarkMode,
+
     classrooms,
     recordings,
     favourites,

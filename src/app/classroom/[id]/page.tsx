@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useAppState } from '@/context/AppStateContext'
 import { Check, Plus } from 'lucide-react'
 import type { Classroom, RecordingWithMeta } from '@/components/recording/types'
+import GlobalLayout from '@/components/layout/GlobalLayout';
 
 export default function ClassroomPage() {
   // Navigation hooks for routing and params
@@ -61,15 +62,18 @@ export default function ClassroomPage() {
   // Loading/Error state
   if (!classroom) {
     return (
+      <GlobalLayout>
       <DashboardLayout>
         <div className="flex items-center justify-center">
           <p className="text-gray-500">Classroom not found</p>
         </div>
       </DashboardLayout>
+      </GlobalLayout>
     )
   }
 
   return (
+    <GlobalLayout>
     <DashboardLayout>
       <div>
         {/* Classroom Header Section */}
@@ -205,5 +209,6 @@ export default function ClassroomPage() {
         </div>
       )}
     </DashboardLayout>
+    </GlobalLayout>
   )
 }

@@ -34,7 +34,11 @@ export default function RootLayout({
     '/classroom',
     '/favourites',
     '/recordings',
-    '/trash'
+    '/trash',
+    '/profile-settings',
+    '/notifications-settings',
+    '/help-and-support',
+    '/account-settings',
     // Add any other dashboard-related routes
   ]
 

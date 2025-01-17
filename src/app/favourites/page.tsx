@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useAppState } from '@/context/AppStateContext'
 import type { DialogType, TrashableItem } from '@/components/recording/types'
+import GlobalLayout from '@/components/layout/GlobalLayout';
 
 export default function FavouritesPage() {
   const router = useRouter()
@@ -27,6 +28,7 @@ export default function FavouritesPage() {
   }
 
   return (
+    <GlobalLayout>
     <DashboardLayout>
       <div>
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">
@@ -135,5 +137,6 @@ export default function FavouritesPage() {
         )}
       </div>
     </DashboardLayout>
+    </GlobalLayout>
   )
 }
