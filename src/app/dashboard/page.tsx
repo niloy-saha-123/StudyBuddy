@@ -8,7 +8,6 @@ import { useAppState } from '@/context/AppStateContext'
 import type { DialogType } from '@/components/recording/types'
 
 export default function DashboardPage() {
-  // Get state and functions from context
   const { 
     classrooms, 
     setClassrooms,
@@ -18,12 +17,10 @@ export default function DashboardPage() {
     updateClassroomName 
   } = useAppState()
 
-  // Local state for dialogs and form
   const [currentDialog, setCurrentDialog] = useState<DialogType>('none')
   const [selectedClassroom, setSelectedClassroom] = useState<string | null>(null)
   const [newClassroomName, setNewClassroomName] = useState('')
 
-  // Handle classroom creation
   const handleCreateClassroom = () => {
     if (!newClassroomName.trim()) return
 
@@ -43,7 +40,6 @@ export default function DashboardPage() {
     setCurrentDialog('none')
   }
 
-  // Handle renaming a classroom
   const handleRename = () => {
     if (!newClassroomName.trim() || !selectedClassroom) return
 
@@ -97,65 +93,71 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {classrooms.map((classroom) => (
-                <ClassroomCard
-                  key={classroom.id}
-                  {...classroom}
-                  onRename={() => {
-                    setSelectedClassroom(classroom.id)
-                    setNewClassroomName(classroom.name)
-                    setCurrentDialog('rename')
-                  }}
-                  onToggleFavourite={() => 
-                    classroom.isFavourite 
-                      ? removeFromFavourites(classroom.id)
-                      : addToFavourites(classroom)
-                  }
-                  onDelete={() => moveToTrash(classroom)}
-                />
-              ))}
+              {classrooms.map((classroom, index) => {
+                const colors = ['blue', 'purple', 'green', 'pink'] as const
+                const positionColor = colors[index % colors.length]
+                
+                return (
+                  <ClassroomCard
+                    key={classroom.id}
+                    {...classroom}
+                    color={positionColor}
+                    onRename={() => {
+                      setSelectedClassroom(classroom.id)
+                      setNewClassroomName(classroom.name)
+                      setCurrentDialog('rename')
+                    }}
+                    onToggleFavourite={() => 
+                      classroom.isFavourite 
+                        ? removeFromFavourites(classroom.id)
+                        : addToFavourites(classroom)
+                    }
+                    onDelete={() => moveToTrash(classroom)}
+                  />
+                )
+              })}
             </div>
           )}
         </div>
-      </div>
 
-      {/* Dialog Overlays */}
-      {(currentDialog === 'create' || currentDialog === 'rename') && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
-          <div className="bg-white rounded-lg p-6 w-[400px] animate-in slide-in-from-bottom-4 duration-200">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              {currentDialog === 'create' ? 'Create New Classroom' : 'Rename Classroom'}
-            </h3>
-            <input
-              type="text"
-              value={newClassroomName}
-              onChange={(e) => setNewClassroomName(e.target.value)}
-              placeholder="Enter classroom name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 placeholder-gray-400"
-              autoFocus
-            />
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => {
-                  setCurrentDialog('none')
-                  setNewClassroomName('')
-                  setSelectedClassroom(null)
-                }}
-                className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={currentDialog === 'create' ? handleCreateClassroom : handleRename}
-                disabled={!newClassroomName.trim()}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {currentDialog === 'create' ? 'Create' : 'Save'}
-              </button>
+        {/* Dialog Overlays */}
+        {(currentDialog === 'create' || currentDialog === 'rename') && (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
+            <div className="bg-white rounded-lg p-6 w-[400px] animate-in slide-in-from-bottom-4 duration-200">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                {currentDialog === 'create' ? 'Create New Classroom' : 'Rename Classroom'}
+              </h3>
+              <input
+                type="text"
+                value={newClassroomName}
+                onChange={(e) => setNewClassroomName(e.target.value)}
+                placeholder="Enter classroom name"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 placeholder-gray-400"
+                autoFocus
+              />
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => {
+                    setCurrentDialog('none')
+                    setNewClassroomName('')
+                    setSelectedClassroom(null)
+                  }}
+                  className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={currentDialog === 'create' ? handleCreateClassroom : handleRename}
+                  disabled={!newClassroomName.trim()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {currentDialog === 'create' ? 'Create' : 'Save'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </DashboardLayout>
   )
 }

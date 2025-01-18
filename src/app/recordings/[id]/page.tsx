@@ -1,65 +1,117 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useState, useRef, useEffect } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import DashboardLayout from '@/components/layout/DashboardLayout'
+import ReactMarkdown from 'react-markdown'
 import { 
-  PlayCircleIcon, 
-  PauseCircleIcon, 
-  FileTextIcon, 
-  ClipboardListIcon,
-  ChevronLeftIcon
+  PlayCircle,
+  PauseCircle,
+  FileText, 
+  ClipboardList,
+  ChevronLeft,
+  Volume2,
+  AlertTriangle
 } from 'lucide-react'
-
-type Recording = {
-  id: string;
-  audioBlob: Blob | string;
-  audioUrl: string;
-  transcription: string | null;
-  createdAt: Date;
-  title?: string;
-  isTranscribing?: boolean;
-  isSummarizing?: boolean;
-  summary?: string;
-  error?: string;
-};
+import { type RecordingWithMeta } from '@/components/recording/types'
+import { formatDistance } from 'date-fns'
+import { useAppState } from '@/context/AppStateContext'
 
 export default function RecordingPage() {
   const params = useParams()
   const router = useRouter()
-  const [recording, setRecording] = useState<Recording | null>(null)
+  const searchParams = useSearchParams()
+  const from = searchParams.get('from')
+  const { classrooms } = useAppState()
+  
+  // Core states
+  const [isMounted, setIsMounted] = useState(false)
+  const [recording, setRecording] = useState<RecordingWithMeta | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [volume, setVolume] = useState(1)
   const [expandedTranscription, setExpandedTranscription] = useState(false)
   const [expandedSummary, setExpandedSummary] = useState(false)
+  
+  // Audio refs
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const progressBarRef = useRef<HTMLDivElement>(null)
 
-  // Load specific recording from local storage
+  // Initialize mounting state
   useEffect(() => {
-    const storedRecordings = localStorage.getItem('voiceRecordings')
-    if (storedRecordings) {
-      const parsedRecordings: Recording[] = JSON.parse(storedRecordings).map((rec: Recording) => ({
-        ...rec,
-        createdAt: new Date(rec.createdAt),
-        audioBlob: typeof rec.audioBlob === 'string' ? rec.audioBlob : ''
-      }))
-      const currentRecording = parsedRecordings.find(rec => rec.id === params.id)
-      if (currentRecording) {
-        setRecording(currentRecording)
+    setIsMounted(true)
+  }, [])
+
+  // Load recording from localStorage
+  useEffect(() => {
+    if (isMounted) {
+      const storedRecordings = localStorage.getItem('voiceRecordings')
+      if (storedRecordings) {
+        const parsedRecordings: RecordingWithMeta[] = JSON.parse(storedRecordings).map((rec: RecordingWithMeta) => ({
+          ...rec,
+          createdAt: new Date(rec.createdAt),
+          audioBlob: typeof rec.audioBlob === 'string' ? rec.audioBlob : ''
+        }))
+        const currentRecording = parsedRecordings.find(rec => rec.id === params.id)
+        if (currentRecording) {
+          setRecording(currentRecording)
+          // Initialize audio element
+          const audio = new Audio(currentRecording.audioUrl)
+          audio.volume = volume
+          audioRef.current = audio
+          
+          // Set up audio event listeners
+          audio.addEventListener('loadedmetadata', () => {
+            setDuration(audio.duration)
+          })
+          
+          audio.addEventListener('timeupdate', () => {
+            setCurrentTime(audio.currentTime)
+          })
+          
+          audio.addEventListener('ended', () => {
+            setIsPlaying(false)
+            setCurrentTime(0)
+          })
+        }
       }
     }
-  }, [params.id])
+  }, [params.id, isMounted, volume])
 
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
-      if (audioPlayer) {
-        audioPlayer.pause()
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.removeEventListener('loadedmetadata', () => {})
+        audioRef.current.removeEventListener('timeupdate', () => {})
+        audioRef.current.removeEventListener('ended', () => {})
       }
     }
-  }, [audioPlayer])
+  }, [])
 
-  // Transcribe audio functionality
-  const transcribeAudio = async (recording: Recording) => {
+  const getBackButtonText = () => {
+    if (from?.startsWith('/classroom/')) {
+      const classroomId = from.split('/')[2]
+      const classroom = classrooms.find(c => c.id === classroomId)
+      return `Back to ${classroom?.name || 'Classroom'}`
+    }
+
+    switch(from) {
+      case '/favourites':
+        return 'Back to Favourites'
+      case '/dashboard':
+        return 'Back to Dashboard'
+      default:
+        return 'Back to Recordings'
+    }
+  }
+
+  // Transcribe functionality
+  const transcribeAudio = async () => {
+    if (!recording) return
+
     try {
       setRecording(prev => prev ? {
         ...prev,
@@ -82,6 +134,10 @@ export default function RecordingPage() {
       }
 
       const data = await transcribeResponse.json()
+      
+      if (!data.success) {
+        throw new Error(data.message || 'No speech detected in the recording')
+      }
 
       const updatedRecording = {
         ...recording,
@@ -99,13 +155,12 @@ export default function RecordingPage() {
         error: err instanceof Error ? err.message : 'Transcription failed'
       } : null)
       console.error('Transcription error:', err)
-      alert(err instanceof Error ? err.message : 'Transcription failed')
     }
   }
 
-  // Summarization functionality
-  const summarizeTranscription = async (recording: Recording) => {
-    if (!recording.transcription) {
+  // Summarize functionality
+  const summarizeTranscription = async () => {
+    if (!recording?.transcription) {
       alert('Please transcribe the recording first')
       return
     }
@@ -127,16 +182,11 @@ export default function RecordingPage() {
         }),
       })
 
-      const contentType = response.headers.get("content-type")
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error('Server returned non-JSON response')
+      if (!response.ok) {
+        throw new Error('Failed to generate summary')
       }
 
       const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Summarization failed')
-      }
 
       const updatedRecording = {
         ...recording,
@@ -148,24 +198,59 @@ export default function RecordingPage() {
       setRecording(updatedRecording)
       updateLocalStorage(updatedRecording)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Summarization failed'
-      
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate summary'
       setRecording(prev => prev ? {
         ...prev,
         isSummarizing: false,
         error: errorMessage,
         summary: undefined
       } : null)
-
-      alert(errorMessage)
     }
   }
 
-  // Update local storage helper
-  const updateLocalStorage = (updatedRecording: Recording) => {
+  // Audio control functions
+  const togglePlayPause = () => {
+    if (!audioRef.current) return
+
+    if (isPlaying) {
+      audioRef.current.pause()
+    } else {
+      audioRef.current.play()
+    }
+    setIsPlaying(!isPlaying)
+  }
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !progressBarRef.current) return
+
+    const bounds = progressBarRef.current.getBoundingClientRect()
+    const x = e.clientX - bounds.left
+    const percentage = x / bounds.width
+    const newTime = percentage * duration
+
+    audioRef.current.currentTime = newTime
+    setCurrentTime(newTime)
+  }
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value)
+    setVolume(newVolume)
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume
+    }
+  }
+
+  // Helper functions
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60)
+    const seconds = Math.floor(time % 60)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
+
+  const updateLocalStorage = (updatedRecording: RecordingWithMeta) => {
     const storedRecordings = localStorage.getItem('voiceRecordings')
     if (storedRecordings) {
-      const recordings: Recording[] = JSON.parse(storedRecordings)
+      const recordings: RecordingWithMeta[] = JSON.parse(storedRecordings)
       const updatedRecordings = recordings.map(rec => 
         rec.id === updatedRecording.id ? updatedRecording : rec
       )
@@ -173,31 +258,6 @@ export default function RecordingPage() {
     }
   }
 
-  // Play/Pause functionality
-  const toggleAudio = () => {
-    if (!recording) return
-
-    if (audioPlayer) {
-      if (isPlaying) {
-        audioPlayer.pause()
-        setIsPlaying(false)
-      } else {
-        audioPlayer.play()
-        setIsPlaying(true)
-      }
-    } else {
-      const audio = new Audio(recording.audioUrl)
-      audio.onended = () => {
-        setIsPlaying(false)
-        setAudioPlayer(null)
-      }
-      audio.play()
-      setAudioPlayer(audio)
-      setIsPlaying(true)
-    }
-  }
-
-  // Format date helper
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
@@ -206,6 +266,16 @@ export default function RecordingPage() {
       hour: '2-digit',
       minute: '2-digit'
     }).format(date)
+  }
+
+  if (!isMounted) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-[calc(100vh-6rem)]">
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   if (!recording) {
@@ -223,11 +293,11 @@ export default function RecordingPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push(from || '/recordings')}
           className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
         >
-          <ChevronLeftIcon className="w-5 h-5 mr-1" />
-          Back to Recordings
+          <ChevronLeft className="w-5 h-5 mr-1" />
+          {getBackButtonText()}
         </button>
 
         <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -238,29 +308,61 @@ export default function RecordingPage() {
                 {recording.title || `Recording from ${formatDate(recording.createdAt)}`}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
-                Recorded on {formatDate(recording.createdAt)}
+                {recording.method === 'uploaded' ? 'Uploaded' : 'Recorded'} {formatDistance(recording.createdAt, new Date(), { addSuffix: true })}
               </p>
-            </div>
-
-            {/* Audio Controls */}
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={toggleAudio}
-                className="text-blue-500 hover:text-blue-600"
-              >
-                {isPlaying ? (
-                  <PauseCircleIcon className="w-12 h-12" />
-                ) : (
-                  <PlayCircleIcon className="w-12 h-12" />
-                )}
-              </button>
             </div>
           </div>
 
-          {/* Processing Buttons */}
+          {/* Audio Player */}
+          <div className="mb-8 bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center gap-4 mb-4">
+              <button 
+                onClick={togglePlayPause}
+                className="text-blue-500 hover:text-blue-600"
+              >
+                {isPlaying ? (
+                  <PauseCircle className="w-12 h-12" />
+                ) : (
+                  <PlayCircle className="w-12 h-12" />
+                )}
+              </button>
+
+              <div className="flex-1">
+                <div 
+                  ref={progressBarRef}
+                  onClick={handleProgressClick}
+                  className="h-2 bg-gray-200 rounded-full cursor-pointer"
+                >
+                  <div 
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{ width: `${(currentTime / duration) * 100}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-sm text-gray-500 mt-1">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Volume2 className="w-5 h-5 text-gray-500" />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  className="w-24"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
           <div className="flex items-center gap-4 mb-8">
             <button
-              onClick={() => transcribeAudio(recording)}
+              onClick={transcribeAudio}
               disabled={recording.isTranscribing}
               className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                 recording.isTranscribing
@@ -268,13 +370,13 @@ export default function RecordingPage() {
                   : 'bg-blue-500 text-white hover:bg-blue-600'
               }`}
             >
-              <FileTextIcon className="w-5 h-5" />
+              <FileText className="w-5 h-5" />
               {recording.isTranscribing ? 'Transcribing...' : 'Transcribe'}
             </button>
 
             {recording.transcription && (
               <button
-                onClick={() => summarizeTranscription(recording)}
+                onClick={summarizeTranscription}
                 disabled={recording.isSummarizing}
                 className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                   recording.isSummarizing
@@ -282,11 +384,19 @@ export default function RecordingPage() {
                     : 'bg-green-500 text-white hover:bg-green-600'
                 }`}
               >
-                <ClipboardListIcon className="w-5 h-5" />
+                <ClipboardList className="w-5 h-5" />
                 {recording.isSummarizing ? 'Summarizing...' : 'Summarize'}
               </button>
             )}
           </div>
+
+          {/* Error Message */}
+          {recording.error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-600">{recording.error}</p>
+            </div>
+          )}
 
           {/* Content Sections */}
           <div className="space-y-6">
@@ -295,12 +405,12 @@ export default function RecordingPage() {
               <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <FileTextIcon className="w-5 h-5" />
+                    <FileText className="w-5 h-5" />
                     Transcription
                   </h2>
                 </div>
                 <div className="prose max-w-none">
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                     {recording.transcription.length > 300 && !expandedTranscription
                       ? `${recording.transcription.slice(0, 300)}...`
                       : recording.transcription}
@@ -312,40 +422,57 @@ export default function RecordingPage() {
                     >
                       {expandedTranscription ? 'Show less' : 'Show more'}
                     </button>
-                  )}
-                </div>
+                    )}
+                    </div>
+                  </div>
+                )}
+     
+                {/* Summary Section */}
+                {recording.summary && (
+                  <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-semibold text-green-800 flex items-center gap-2">
+                        <ClipboardList className="w-5 h-5" />
+                        Summary
+                      </h2>
+                    </div>
+                    <div className="prose max-w-none">
+                      <ReactMarkdown 
+                        className="text-gray-700 leading-relaxed"
+                        components={{
+                          h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                          h2: ({node, ...props}) => <h2 className="text-xl font-semibold mt-4 mb-3" {...props} />,
+                          h3: ({node, ...props}) => <h3 className="text-lg font-medium mt-3 mb-2" {...props} />,
+                          strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
+                          em: ({node, ...props}) => <em className="italic" {...props} />,
+                          blockquote: ({node, ...props}) => (
+                            <blockquote className="border-l-4 border-green-500 pl-4 my-4 italic" {...props} />
+                          ),
+                          ul: ({node, ...props}) => <ul className="list-disc pl-6 my-4" {...props} />,
+                          ol: ({node, ...props}) => <ol className="list-decimal pl-6 my-4" {...props} />,
+                          li: ({node, ...props}) => <li className="my-1" {...props} />,
+                          p: ({node, ...props}) => <p className="my-2" {...props} />,
+                        }}
+                      >
+                        {recording.summary.length > 300 && !expandedSummary
+                          ? `${recording.summary.slice(0, 300)}...`
+                          : recording.summary
+                        }
+                      </ReactMarkdown>
+                      {recording.summary.length > 300 && (
+                        <button
+                          onClick={() => setExpandedSummary(!expandedSummary)}
+                          className="text-green-500 hover:text-green-600 mt-4"
+                        >
+                          {expandedSummary ? 'Show less' : 'Show more'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-
-            {/* Summary Section */}
-            {recording.summary && (
-              <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-green-800 flex items-center gap-2">
-                    <ClipboardListIcon className="w-5 h-5" />
-                    Summary
-                  </h2>
-                </div>
-                <div className="prose max-w-none">
-                  <p className="text-gray-700 leading-relaxed">
-                    {recording.summary.length > 300 && !expandedSummary
-                      ? `${recording.summary.slice(0, 300)}...`
-                      : recording.summary}
-                  </p>
-                  {recording.summary.length > 300 && (
-                    <button
-                      onClick={() => setExpandedSummary(!expandedSummary)}
-                      className="text-green-500 hover:text-green-600 mt-4"
-                    >
-                      {expandedSummary ? 'Show less' : 'Show more'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
-    </DashboardLayout>
-  )
-}
+        </DashboardLayout>
+      )
+     }

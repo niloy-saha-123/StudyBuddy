@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useAppState } from '@/context/AppStateContext'
-import UploadRecording from './UploadRecording'
 import type { RecordingWithMeta } from '@/components/recording/types'
 
 type ModalType = 'record' | 'upload'
@@ -36,6 +35,7 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
     color: ReturnType<typeof setInterval> | null
   } | null>(null)
 
+  // Reset all states and stop recording
   const resetRecording = () => {
     setRecordingStatus('idle')
     setElapsedTime(0)
@@ -51,7 +51,7 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
     mediaRecorderRef.current = null
   }
 
-  // Timer functions
+  // Timer management
   const startTimer = () => {
     const startTime = Date.now() - elapsedTime
     const timer = setInterval(() => {
@@ -127,31 +127,29 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
   const handleSave = () => {
     if (!filename.trim()) return
 
-    const finalFilename = filename.trim().endsWith('.wav') 
-      ? filename.trim() 
-      : `${filename.trim()}.wav`
-
+    // Create recording object
     const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' })
     const audioUrl = URL.createObjectURL(audioBlob)
 
     const newRecording: RecordingWithMeta = {
       id: crypto.randomUUID(),
-      title: finalFilename,
+      title: filename.trim().endsWith('.wav') ? filename.trim() : `${filename.trim()}.wav`,
       audioBlob: audioBlob,
       audioUrl,
       transcription: null,
       createdAt: new Date(),
       type: 'recording',
+      method: 'recorded',
       isFavourite: false,
       isTranscribing: false,
       error: undefined
     }
 
-    // Update localStorage with new recording at the beginning
+    // Update localStorage
     const savedRecordings = JSON.parse(localStorage.getItem('voiceRecordings') || '[]')
     localStorage.setItem('voiceRecordings', JSON.stringify([newRecording, ...savedRecordings]))
 
-    // Add to app state (addRecording function handles putting it at the beginning)
+    // Add to app state
     addRecording(newRecording)
 
     // Reset state
@@ -159,10 +157,8 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
     setFilename('')
     
     if (isClosing) {
-      // If closing via X button, close the modal
       onClose()
     } else {
-      // If saving normally, reset to new recording state
       resetRecording()
     }
   }
@@ -206,164 +202,165 @@ export default function RecordingModal({ isOpen, onClose, modalType }: Recording
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999]">
-      {modalType === 'upload' ? (
-        <UploadRecording onClose={onClose} />
-      ) : (
-        <div className="bg-white rounded-lg p-6 w-96">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-800">
-              {recordingStatus === 'recording'
-                ? 'Recording in Progress'
-                : recordingStatus === 'paused'
-                ? 'Recording Paused'
-                : 'Voice Recording'}
-            </h2>
-            <button
-              onClick={handleClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+      <div className="bg-white rounded-lg p-6 w-96">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-800">
+            {recordingStatus === 'recording'
+              ? 'Recording in Progress'
+              : recordingStatus === 'paused'
+              ? 'Recording Paused'
+              : 'Voice Recording'}
+          </h2>
+          <button
+            onClick={handleClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <svg
+              className="w-5 h-5 text-gray-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className="w-5 h-5 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
+        {/* Timer Display */}
+        <div className="text-center">
+          <div className="relative w-48 h-48 mx-auto mb-8">
+            <div className="absolute inset-0 rounded-full bg-white flex items-center justify-center">
+              <span
+                className={`text-5xl font-mono transition-all duration-[4000ms] ease-in-out ${
+                  recordingStatus === 'recording'
+                    ? isLightColor
+                      ? 'text-[#d9e6fe]'
+                      : 'text-[#3473ef]'
+                    : 'text-gray-400'
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+                {formatTime(elapsedTime)}
+              </span>
+            </div>
+
+            {/* Recording Animation */}
+            {recordingStatus === 'recording' && (
+              <div className="absolute inset-0">
+                <div className="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20 animate-ping"></div>
+              </div>
+            )}
           </div>
 
-          {/* Error Display */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          {/* Timer Display */}
-          <div className="text-center">
-            <div className="relative w-48 h-48 mx-auto mb-8">
-              <div className="absolute inset-0 rounded-full bg-white flex items-center justify-center">
-                <span
-                  className={`text-5xl font-mono transition-all duration-[4000ms] ease-in-out ${
+          {/* Control Buttons */}
+          <div className="flex gap-4 justify-center">
+            {recordingStatus === 'idle' ? (
+              <button
+                onClick={startRecording}
+                className="w-full py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Start Recording
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={recordingStatus === 'recording' ? pauseRecording : resumeRecording}
+                  className="flex-1 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {recordingStatus === 'recording' ? 'Pause' : 'Resume'}
+                </button>
+                <button
+                  onClick={stopRecordingAndSave}
+                  className={`flex-1 py-3 rounded-lg text-white transition-all hover:scale-[1.02] active:scale-[0.98] ${
                     recordingStatus === 'recording'
-                      ? isLightColor
-                        ? 'text-[#d9e6fe]'
-                        : 'text-[#3473ef]'
-                      : 'text-gray-400'
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-blue-500 hover:bg-blue-600'
                   }`}
                 >
-                  {formatTime(elapsedTime)}
-                </span>
-              </div>
-
-              {/* Recording Animation */}
-              {recordingStatus === 'recording' && (
-                <div className="absolute inset-0">
-                  <div className="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20"></div>
-                  <div className="absolute inset-0 rounded-full border-4 border-blue-500 opacity-20 animate-ping"></div>
-                </div>
-              )}
-            </div>
-
-            {/* Control Buttons */}
-            <div className="flex gap-4 justify-center">
-              {recordingStatus === 'idle' ? (
-                <button
-                  onClick={startRecording}
-                  className="w-full py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  Start Recording
+                  {recordingStatus === 'recording' ? 'Stop' : 'Save'}
                 </button>
-              ) : (
-                <>
-                  <button
-                    onClick={recordingStatus === 'recording' ? pauseRecording : resumeRecording}
-                    className="flex-1 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    {recordingStatus === 'recording' ? 'Pause' : 'Resume'}
-                  </button>
-                  <button
-                    onClick={stopRecordingAndSave}
-                    className={`flex-1 py-3 rounded-lg text-white transition-all hover:scale-[1.02] active:scale-[0.98] ${
-                      recordingStatus === 'recording'
-                        ? 'bg-red-500 hover:bg-red-600'    // Red for Stop
-                        : 'bg-blue-500 hover:bg-blue-600'  // Blue for Save
-                    }`}
-                  >
-                    {recordingStatus === 'recording' ? 'Stop' : 'Save'}
-                  </button>
-                </>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Save Dialog */}
-      {currentDialog === 'save' && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[10000]">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Save Recording</h3>
-            <input
-              type="text"
-              value={filename}
-              onChange={(e) => setFilename(e.target.value)}
-              placeholder="Enter filename"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
-              autoFocus
-            />
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => {
-                  setCurrentDialog('none')
-                  resetRecording()
-                }}
-                className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={!filename.trim()}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Save
-              </button>
+        {/* Save Dialog */}
+        {currentDialog === 'save' && (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[10000]">
+            <div className="bg-white rounded-lg p-6 w-96">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Save Recording</h3>
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="text"
+                  value={filename}
+                  onChange={(e) => setFilename(e.target.value)}
+                  placeholder="Enter filename"
+                  className="flex-grow px-4 py-2 border border-gray-300 rounded-lg-l 
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  autoFocus
+                />
+                <span className="text-gray-500 text-sm">.wav</span>
+              </div>
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => {
+                    setCurrentDialog('none')
+                    resetRecording()
+                  }}
+                  className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={!filename.trim()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 
+                         transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Save and Exit Dialog */}
-      {currentDialog === 'saveAndExit' && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[10000]">
-          <div className="bg-white rounded-lg p-6 w-96">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Save Recording?</h3>
-            <p className="text-gray-600 mb-6">Would you like to save this recording before exiting?</p>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={handleDiscard}
-                className="px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                Discard
-              </button>
-              <button
-                onClick={() => setCurrentDialog('save')}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                Save
-              </button>
+        {/* Save and Exit Dialog */}
+        {currentDialog === 'saveAndExit' && (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[10000]">
+            <div className="bg-white rounded-lg p-6 w-96">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Save Recording?</h3>
+              <p className="text-gray-600 mb-6">Would you like to save this recording before exiting?</p>
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={handleDiscard}
+                  className="px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  Discard
+                </button>
+                <button
+                  onClick={() => setCurrentDialog('save')}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

@@ -1,35 +1,30 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
-import { Recording, UploadStatus } from './types'
+import { useState, useRef } from 'react'
+import { useAppState } from '@/context/AppStateContext'
+import type { RecordingWithMeta } from '@/components/recording/types'
 
 interface UploadRecordingProps {
   onClose: () => void
 }
 
 export default function UploadRecording({ onClose }: UploadRecordingProps) {
-  // States for handling drag and drop
-  const [isDragging, setIsDragging] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [audioUrl, setAudioUrl] = useState<string | null>(null)
-  const [transcription, setTranscription] = useState<string | null>(null)
-  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle')
-
-  // Ref for the hidden file input
+  const [filename, setFilename] = useState('')
+  const [isDragging, setIsDragging] = useState(false)
+  
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { addRecording } = useAppState()
 
-  // Supported file types
-  const supportedTypes = ['audio/mp3', 'audio/mpeg', 'audio/wav']
+  const supportedTypes = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave']
 
-  // Handle file validation
   const validateFile = (file: File) => {
     if (!supportedTypes.includes(file.type)) {
       setError('Please upload an audio file (MP3 or WAV)')
       return false
     }
     
-    // 50MB size limit
     if (file.size > 50 * 1024 * 1024) {
       setError('File size should be less than 50MB')
       return false
@@ -38,97 +33,62 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
     return true
   }
 
-  // Handle file selection
   const handleFile = (file: File) => {
     setError(null)
-    setTranscription(null)
     
     if (validateFile(file)) {
       setFile(file)
-      // Create URL for audio preview
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl)
-      }
-      const newAudioUrl = URL.createObjectURL(file)
-      setAudioUrl(newAudioUrl)
+      // Remove extension when setting filename for edit
+      const nameWithoutExt = file.name.split('.')[0] || ''
+      setFilename(nameWithoutExt)
     }
   }
 
-  // Handle transcription
-  const handleTranscribe = async () => {
-    if (!file) return;
-    
+  const handleSave = async () => {
+    if (!file || !filename.trim()) return
+
     try {
-      setUploadStatus('transcribing');
-      setError(null);
+      const audioUrl = URL.createObjectURL(file)
+      const extension = file.name.split('.').pop() || 'wav'
+      const fullTitle = `${filename.trim()}.${extension}`
 
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Transcription failed: ${response.statusText}`);
+      const newRecording: RecordingWithMeta = {
+        id: crypto.randomUUID(),
+        title: fullTitle,
+        audioBlob: file,
+        audioUrl,
+        transcription: null,
+        createdAt: new Date(),
+        type: 'recording',
+        method: 'uploaded',
+        isFavourite: false,
+        isTranscribing: false,
+        isSummarizing: false,
+        error: undefined,
+        duration: 0,
+        fileSize: file.size
       }
 
-      const data = await response.json();
-      setTranscription(data.transcription);
-      setUploadStatus('success');
-    } catch (error) {
-      console.error('Transcription error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to transcribe audio');
-      setUploadStatus('error');
-    }
-  };
+      // Add to state
+      addRecording(newRecording)
 
-  // Save recording to localStorage
-  const saveRecordingToLocalStorage = useCallback(() => {
-    if (!file || !audioUrl) return;
+      // Save to localStorage
+      const savedRecordings = JSON.parse(localStorage.getItem('voiceRecordings') || '[]')
+      localStorage.setItem('voiceRecordings', JSON.stringify([newRecording, ...savedRecordings]))
 
-    try {
-      // Create the recording object
-      const newRecording: Recording = {
-        id: crypto.randomUUID(),
-        audioBlob: file,
-        audioUrl: URL.createObjectURL(file),
-        transcription: transcription,
-        createdAt: new Date(),
-        title: file.name || `Uploaded Recording ${new Date().toLocaleString()}`
-      };
-
-      // Get existing recordings
-      const savedRecordings = JSON.parse(localStorage.getItem('voiceRecordings') || '[]');
-      
-      // Add new recording
-      const updatedRecordings = [...savedRecordings, newRecording];
-      
-      // Save back to localStorage
-      localStorage.setItem('voiceRecordings', JSON.stringify(updatedRecordings));
-
-      alert('Recording saved successfully!');
-      onClose();
+      onClose()
     } catch (err) {
-      console.error('Error saving recording:', err);
-      setError('Failed to save recording');
+      setError('Failed to save recording')
+      console.error('Error saving recording:', err)
     }
-  }, [file, audioUrl, transcription, onClose]);
+  }
 
-  // Handle drag events
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setIsDragging(true)
-    } else if (e.type === 'dragleave') {
-      setIsDragging(false)
-    }
+    setIsDragging(e.type === 'dragenter' || e.type === 'dragover')
   }
 
-  // Handle drop event
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -140,28 +100,8 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
     }
   }
 
-  // Handle file input change
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) {
-      handleFile(e.target.files[0])
-    }
-  }
-
-  // Handle click on drop zone
-  const handleDropZoneClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  // Cleanup on unmount
-  const handleClose = () => {
-    if (audioUrl) {
-      URL.revokeObjectURL(audioUrl)
-    }
-    onClose()
-  }
-
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999]">
       <div className="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -169,7 +109,7 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
             Upload Recording
           </h2>
           <button 
-            onClick={handleClose}
+            onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,7 +120,7 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
 
         {/* Drop Zone */}
         <div 
-          onClick={handleDropZoneClick}
+          onClick={() => fileInputRef.current?.click()}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -205,7 +145,8 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
           ) : (
             <>
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               <p className="text-sm text-gray-600">
                 Drag & drop your audio file here or <span className="text-blue-500">browse</span>
@@ -215,15 +156,23 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
           )}
         </div>
 
-        {/* Audio Preview */}
-        {audioUrl && (
+        {/* Filename Input */}
+        {file && (
           <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Preview</h3>
-            <audio 
-              controls 
-              src={audioUrl}
-              className="w-full"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Recording Name
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={filename}
+                onChange={(e) => setFilename(e.target.value)}
+                className="flex-grow px-3 py-2 border border-gray-300 rounded-md 
+                         text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter recording name"
+              />
+              <span className="text-gray-500 text-sm">{`.${file.name.split('.').pop()}`}</span>
+            </div>
           </div>
         )}
 
@@ -232,21 +181,11 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
           <p className="text-sm text-red-500 mb-4">{error}</p>
         )}
 
-        {/* Transcription Result */}
-        {transcription && (
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Transcription</h3>
-            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
-              {transcription}
-            </p>
-          </div>
-        )}
-
         {/* Hidden File Input */}
         <input
           type="file"
           ref={fileInputRef}
-          onChange={handleFileInput}
+          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
           accept="audio/*"
           className="hidden"
         />
@@ -254,24 +193,18 @@ export default function UploadRecording({ onClose }: UploadRecordingProps) {
         {/* Action Buttons */}
         <div className="flex gap-4 justify-end">
           <button
-            onClick={handleClose}
-            className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
             Cancel
           </button>
-          {file && !transcription && (
-            <button
-              onClick={handleTranscribe}
-              disabled={uploadStatus === 'transcribing'}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {uploadStatus === 'transcribing' ? 'Transcribing...' : 'Transcribe'}
-            </button>
-          )}
           {file && (
             <button
-              onClick={saveRecordingToLocalStorage}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              onClick={handleSave}
+              disabled={!filename.trim()}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg 
+                       hover:bg-blue-600 transition-colors font-medium
+                       disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Recording
             </button>
