@@ -25,14 +25,19 @@ export default function DashboardPage() {
     if (!newClassroomName.trim()) return
 
     const colors = ['blue', 'purple', 'green', 'pink'] as const
+    const now = new Date()
+    
     const newClassroom = {
       id: Date.now().toString(),
       name: newClassroomName.trim(),
       lectureCount: 0,
-      lastActive: 'Just created',
+      lastActive: now.toISOString(),
       color: colors[classrooms.length % colors.length],
       isFavourite: false,
-      type: 'classroom' as const
+      type: 'classroom' as const,
+      recordings: [], 
+      createdAt: now,
+      updatedAt: now
     }
 
     setClassrooms([...classrooms, newClassroom])

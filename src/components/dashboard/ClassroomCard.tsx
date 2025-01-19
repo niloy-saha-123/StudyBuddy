@@ -46,14 +46,37 @@ export default function ClassroomCard({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const getDaysRemaining = () => {
-    if (!deletedAt) return null
-    const deleteDate = new Date(deletedAt)
-    const thirtyDaysLater = new Date(deleteDate)
-    thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30)
-    const now = new Date()
-    const daysRemaining = Math.ceil((thirtyDaysLater.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    return daysRemaining > 0 ? daysRemaining : 0
+  const formatLastActive = (dateStr: string) => {
+    try {
+      const now = new Date()
+      const date = new Date(dateStr)
+      
+      // Get time differences
+      const diffInMs = now.getTime() - date.getTime()
+      const diffInMins = Math.floor(diffInMs / (1000 * 60))
+      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+      
+      // Less than 1 minute
+      if (diffInMins < 1) {
+        return 'Just now'
+      }
+      
+      // 1-59 minutes
+      if (diffInMins < 60) {
+        return `${diffInMins} ${diffInMins === 1 ? 'minute' : 'minutes'} ago`
+      }
+      
+      // 1-23 hours
+      if (diffInHours < 24) {
+        return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`
+      }
+      
+      // Days
+      return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`
+    } catch (error) {
+      return 'Recently'
+    }
   }
 
   const colorVariants = {
@@ -63,24 +86,9 @@ export default function ClassroomCard({
     pink: 'from-pink-400 to-pink-600'
   }
 
-  const formatLastActive = (dateStr: string) => {
-    const now = new Date()
-    const date = new Date(dateStr)
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-    
-    if (diffInHours < 24) {
-      return diffInHours === 0 ? 'Just now' : `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`
-    }
-    
-    const diffInDays = Math.floor(diffInHours / 24)
-    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`
-  }
-
   return (
     <>
-      <div 
-        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all cursor-pointer group"
-      >
+      <div className="relative bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all cursor-pointer group">
         <div className="flex items-start justify-between">
           <div 
             className="flex-1 cursor-pointer"
@@ -111,7 +119,10 @@ export default function ClassroomCard({
               {name}
             </h3>
             <p className="text-sm text-gray-500">
-              {lectureCount} {lectureCount === 1 ? 'Lecture' : 'Lectures'} • Last Active: {formatLastActive(lastActive)}
+              {lectureCount} {lectureCount === 1 ? 'Lecture' : 'Lectures'}
+            </p>
+            <p className="text-sm text-gray-500">
+              Last Active: {formatLastActive(lastActive)}
             </p>
           </div>
 
