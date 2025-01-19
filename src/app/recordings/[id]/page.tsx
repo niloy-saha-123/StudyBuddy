@@ -38,6 +38,8 @@ export default function RecordingPage() {
   const [addedClassroomIds, setAddedClassroomIds] = useState<Set<string>>(new Set())
   const [showCreateClassroom, setShowCreateClassroom] = useState(false)
   const [newClassroomName, setNewClassroomName] = useState('')
+  const [transcribingRecordingId, setTranscribingRecordingId] = useState<string | null>(null)
+  const [transcriptionError, setTranscriptionError] = useState<string | null>(null)
   
   // Audio refs
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -128,6 +130,76 @@ export default function RecordingPage() {
     setNewClassroomName('')
     setShowCreateClassroom(false)
     setIsAddingToClassroom(false)
+  }
+
+  const handleTranscribe = async () => {
+    if (!recording) return
+  
+    const supportedTypes = ['audio/mp3', 'audio/mpeg', 'audio/wav']
+  
+    try {
+      setTranscribingRecordingId(recording.id)
+      setTranscriptionError(null)
+  
+      if (!recording.audioUrl) {
+        throw new Error('No audio file available')
+      }
+  
+      const response = await fetch(recording.audioUrl)
+      const blob = await response.blob()
+  
+      if (!supportedTypes.includes(blob.type)) {
+        throw new Error('Unsupported audio file type')
+      }
+  
+      const audioFile = new File([blob], 'recording.wav', { type: blob.type })
+  
+      if (audioFile.size > 50 * 1024 * 1024) {
+        throw new Error('File size exceeds 50MB limit')
+      }
+  
+      const formData = new FormData()
+      formData.append('file', audioFile)
+  
+      const transcribeResponse = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData
+      })
+  
+      if (!transcribeResponse.ok) {
+        const errorData = await transcribeResponse.json()
+        throw new Error(errorData.error || 'Transcription failed')
+      }
+  
+      const data = await transcribeResponse.json()
+  
+      const updatedRecording = {
+        ...recording,
+        transcription: data.transcription,
+        isTranscribing: false,
+        error: undefined
+      }
+  
+      setRecording(updatedRecording)
+      updateLocalStorage(updatedRecording)
+  
+    } catch (err: any) {
+      console.error('Transcription Error:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+      })
+  
+      const errorMessage = err.message || 'Unable to transcribe audio'
+      setTranscriptionError(errorMessage)
+      setRecording(prev => prev ? {
+        ...prev,
+        error: errorMessage
+      } : null)
+  
+    } finally {
+      setTranscribingRecordingId(null)
+    }
   }
 
   const getBackButtonText = () => {
@@ -407,18 +479,20 @@ export default function RecordingPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-4 mb-8">
-            <button
-              onClick={transcribeAudio}
-              disabled={recording.isTranscribing}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                recording.isTranscribing
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
-              }`}
-            >
-              <FileText className="w-5 h-5" />
-              {recording.isTranscribing ? 'Transcribing...' : 'Transcribe'}
-            </button>
+            {!recording.transcription && (
+              <button
+                onClick={handleTranscribe}
+                disabled={transcribingRecordingId === recording.id}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                  transcribingRecordingId === recording.id
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                }`}
+              >
+                <FileText className="w-5 h-5" />
+                {transcribingRecordingId === recording.id ? 'Transcribing...' : 'Transcribe'}
+              </button>
+            )}
 
             {recording.transcription && (
               <button
