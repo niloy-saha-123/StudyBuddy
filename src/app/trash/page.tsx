@@ -74,7 +74,11 @@ export default function TrashPage() {
                         <h3 className="text-lg font-semibold text-gray-800">
                           {item.type === 'classroom' ? item.name : (item.title || `Recording from ${formatDate(item.createdAt)}`)}
                         </h3>
-                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          item.type === 'classroom' 
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-purple-100 text-purple-600'
+                        }`}>
                           {item.type === 'classroom' ? 'Classroom' : 'Recording'}
                         </span>
                       </div>
