@@ -30,17 +30,13 @@ export interface RecordingWithMeta extends Omit<Recording, 'audioBlob'> {
   deletedAt?: string
   originalIndex?: number
   itemsBefore?: string[]
-<<<<<<< HEAD
   classroomId?: string;
-=======
-  classroomId?: string
   summary?: string
   isSummarizing?: boolean
   duration?: number
   fileSize?: number
   lastModified?: Date
   method: 'uploaded' | 'recorded'
->>>>>>> feature/dashboard
 }
 
 // Classroom Types
@@ -100,10 +96,8 @@ export interface RecordingActions {
   moveRecordingToTrash: (recording: RecordingWithMeta) => void
   addRecordingToClassroom: (recordingId: string, classroomId: string) => void
   removeRecordingFromClassroom: (recordingId: string, classroomId: string) => void
-<<<<<<< HEAD
   isDarkMode: boolean
   toggleDarkMode: () => void
-=======
   updateRecordingSummary?: (id: string, summary: string) => void
   updateRecordingDuration?: (id: string, duration: number) => void
 }
@@ -119,5 +113,4 @@ export interface RecordingFilters {
   inClassroom?: boolean
   isFavourite?: boolean
   method?: 'uploaded' | 'recorded'
->>>>>>> feature/dashboard
 }

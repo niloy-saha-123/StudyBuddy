@@ -13,12 +13,8 @@
     "@google/generative-ai": "^0.21.0",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "^2.47.10",
-<<<<<<< HEAD
-    "lucide-react": "^0.471.1",
-=======
     "fs": "^0.0.1-security",
     "lucide-react": "^0.473.0",
->>>>>>> feature/dashboard
     "next": "15.0.4",
     "openai": "^4.79.1",
     "path": "^0.12.7",
