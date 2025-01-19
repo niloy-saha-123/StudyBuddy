@@ -17,6 +17,7 @@ export default function RecordingsPage() {
     removeRecordingFromFavourites,
     moveRecordingToTrash,
     updateRecordingTitle,
+    updateRecordingTranscription,
     setClassrooms
   } = useAppState()
 
@@ -31,6 +32,9 @@ export default function RecordingsPage() {
   const [currentlyRenamingId, setCurrentlyRenamingId] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [addedToClassrooms, setAddedToClassrooms] = useState<Set<string>>(new Set())
+  // NEW STATE VARIABLES
+const [transcribingRecordingId, setTranscribingRecordingId] = useState<string | null>(null)
+const [transcriptionError, setTranscriptionError] = useState<string | null>(null)
 
   useEffect(() => {
     const uniqueRecordings = [...new Map(contextRecordings.map(rec => [rec.id, rec])).values()]
@@ -61,7 +65,62 @@ export default function RecordingsPage() {
       minute: '2-digit'
     }).format(date)
   }
+// ENTIRE NEW METHOD
+const handleTranscribe = async (recording: RecordingWithMeta) => {
+  const supportedTypes = ['audio/mp3', 'audio/mpeg', 'audio/wav']
 
+  try {
+    setTranscribingRecordingId(recording.id)
+    setTranscriptionError(null)
+
+    if (!recording.audioUrl) {
+      throw new Error('No audio file available')
+    }
+
+    const response = await fetch(recording.audioUrl)
+    const blob = await response.blob()
+
+    if (!supportedTypes.includes(blob.type)) {
+      throw new Error('Unsupported audio file type')
+    }
+
+    const audioFile = new File([blob], 'recording.wav', { type: blob.type })
+
+    if (audioFile.size > 50 * 1024 * 1024) {
+      throw new Error('File size exceeds 50MB limit')
+    }
+
+    const formData = new FormData()
+    formData.append('file', audioFile)
+
+    const transcribeResponse = await fetch('/api/transcribe', {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!transcribeResponse.ok) {
+      const errorData = await transcribeResponse.json()
+      throw new Error(errorData.error || 'Transcription failed')
+    }
+
+    const data = await transcribeResponse.json()
+
+    updateRecordingTranscription(recording.id, data.transcription)
+
+  } catch (err: any) {
+    console.error('Transcription Error:', {
+      message: err.message,
+      name: err.name,
+      stack: err.stack
+    })
+
+    const errorMessage = err.message || 'Unable to transcribe audio'
+    setTranscriptionError(errorMessage)
+
+  } finally {
+    setTranscribingRecordingId(null)
+  }
+}
   const handleRename = (recording: RecordingWithMeta, e: React.MouseEvent) => {
     e.stopPropagation()
     const extension = recording.title?.split('.').pop() || 'wav'
@@ -178,6 +237,25 @@ export default function RecordingsPage() {
                     <p className="text-sm text-gray-500">
                       {recording.method === 'uploaded' ? 'Uploaded' : 'Recorded'} on {formatDate(recording.createdAt)}
                     </p>
+                     {/* ADD THIS SECTION HERE */}
+                    {!recording.transcription && (
+    <button 
+      onClick={(e) => {
+        e.stopPropagation()
+        handleTranscribe(recording)
+      }}
+      disabled={transcribingRecordingId === recording.id}
+      className="mt-2 px-3 py-1 text-xs bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+    >
+      {transcribingRecordingId === recording.id 
+        ? 'Transcribing...' 
+        : 'Transcribe'}
+    </button>
+  )}
+  
+  {transcriptionError && transcribingRecordingId === recording.id && (
+    <p className="text-xs text-red-500 mt-1">{transcriptionError}</p>
+  )}
                   </div>
 
                   <div className="relative">

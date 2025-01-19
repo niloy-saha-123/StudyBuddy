@@ -55,6 +55,7 @@ export interface Classroom {
   description?: string
   createdAt?: Date
   updatedAt?: Date
+  transcription?: string;
 }
 
 // Combined type for items that can be in favourites/trash
@@ -74,6 +75,7 @@ export interface AppStateContextType extends ClassroomActions, RecordingActions 
   searchRecordings?: (query: string) => RecordingWithMeta[]
   filterRecordings?: (filters: RecordingFilters) => RecordingWithMeta[]
   updateRecordingTitle: (id: string, newTitle: string) => void
+  updateRecordingTranscription: (id: string, transcription: string) => void;
 }
 
 // Classroom Actions Interface

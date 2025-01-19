@@ -404,7 +404,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(STORAGE_KEYS.RECORDINGS, JSON.stringify(updatedRecordings));
       return updatedRecordings;
     });
-  
+   
     setFavourites(current =>
       current.map(item =>
         item.type === 'recording' && item.id === id
@@ -413,7 +413,24 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       )
     );
   };
-
+  const updateRecordingTranscription = (id: string, transcription: string) => {
+    setRecordings(prevRecordings => 
+      prevRecordings.map(recording => 
+        recording.id === id 
+          ? { ...recording, transcription } 
+          : recording
+      )
+    );
+    
+    // Optional: Update localStorage to persist transcription
+    const storedRecordings = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDINGS) || '[]');
+    const updatedStoredRecordings = storedRecordings.map((recording: RecordingWithMeta) => 
+      recording.id === id 
+        ? { ...recording, transcription } 
+        : recording
+    );
+    localStorage.setItem(STORAGE_KEYS.RECORDINGS, JSON.stringify(updatedStoredRecordings));
+  };
   return (
     <AppStateContext.Provider 
       value={{
@@ -430,6 +447,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         removeRecordingFromFavourites,
         moveRecordingToTrash,
         updateRecordingTitle,
+        updateRecordingTranscription,
         addRecordingToClassroom,
         removeRecordingFromClassroom,
         restoreFromTrash,
