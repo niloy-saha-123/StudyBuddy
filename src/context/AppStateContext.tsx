@@ -15,14 +15,6 @@ const STORAGE_KEYS = {
   FAVOURITES: 'favourites'
 } as const
 
-const saveClassroomsToStorage = (updatedClassrooms: Classroom[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.CLASSROOMS, JSON.stringify(updatedClassrooms))
-    } catch (error) {
-      console.error('Error saving classrooms:', error)
-    }
-  }
-
 const AppStateContext = createContext<AppStateContextType | null>(null)
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
@@ -81,6 +73,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   // Helper function to save classrooms to localStorage
   const saveClassroomsToStorage = (updatedClassrooms: Classroom[]) => {
     try {
+      console.log('Saving classrooms:', updatedClassrooms) // Add this line
       localStorage.setItem(STORAGE_KEYS.CLASSROOMS, JSON.stringify(updatedClassrooms))
     } catch (error) {
       console.error('Error saving classrooms:', error)
@@ -93,14 +86,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       const newRecordings = [recording, ...current]
       localStorage.setItem(STORAGE_KEYS.RECORDINGS, JSON.stringify(newRecordings))
       return newRecordings
-    })
-  }
-
-  const setNewClassroom = (newClassroom: Classroom) => {
-    setClassrooms(current => {
-      const updatedClassrooms = [...current, newClassroom]
-      saveClassroomsToStorage(updatedClassrooms)
-      return updatedClassrooms
     })
   }
 
@@ -205,16 +190,20 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   const addRecordingToClassroom = (recordingId: string, classroomId: string) => {
     setClassrooms(current => {
-      const updatedClassrooms = current.map(classroom =>
-        classroom.id === classroomId
-          ? {
+      const updatedClassrooms = current.map(classroom => {
+        if (classroom.id === classroomId) {
+          const currentRecordings = classroom.recordings || []
+          if (!currentRecordings.includes(recordingId)) {
+            return {
               ...classroom,
-              recordings: [...(classroom.recordings || []), recordingId],
+              recordings: [...currentRecordings, recordingId],
               lectureCount: classroom.lectureCount + 1,
               lastActive: new Date().toISOString()
             }
-          : classroom
-      )
+          }
+        }
+        return classroom
+      })
       saveClassroomsToStorage(updatedClassrooms)
       return updatedClassrooms
     })

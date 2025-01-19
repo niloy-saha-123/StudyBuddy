@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { MoreVertical, Plus } from 'lucide-react'
+import { MoreVertical, Plus, Check } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import { useAppState } from '@/context/AppStateContext'
 import type { RecordingWithMeta } from '@/components/recording/types'
@@ -30,8 +30,8 @@ export default function RecordingsPage() {
   const [newClassroomName, setNewClassroomName] = useState('')
   const [currentlyRenamingId, setCurrentlyRenamingId] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+  const [addedToClassrooms, setAddedToClassrooms] = useState<Set<string>>(new Set())
 
-  // Initialize recordings with sorted data and remove duplicates
   useEffect(() => {
     const uniqueRecordings = [...new Map(contextRecordings.map(rec => [rec.id, rec])).values()]
     const sortedRecordings = uniqueRecordings.sort((a, b) => 
@@ -40,7 +40,6 @@ export default function RecordingsPage() {
     setRecordings(sortedRecordings)
   }, [contextRecordings])
 
-  // Handle click outside for menus
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as HTMLElement
@@ -92,6 +91,11 @@ export default function RecordingsPage() {
   const handleAddToClassroom = (recording: RecordingWithMeta, e: React.MouseEvent) => {
     e.stopPropagation()
     setSelectedRecording(recording.id)
+    // Get classrooms this recording is already in
+    const existingClassrooms = classrooms
+      .filter(classroom => classroom.recordings?.includes(recording.id))
+      .map(classroom => classroom.id)
+    setAddedToClassrooms(new Set(existingClassrooms))
     setShowClassroomModal(true)
     setIsMenuOpen(null)
   }
@@ -104,7 +108,7 @@ export default function RecordingsPage() {
       id: Date.now().toString(),
       name: newClassroomName.trim(),
       lectureCount: 0,
-      lastActive: 'Just created',
+      lastActive: new Date().toISOString(),
       color: colors[classrooms.length % colors.length],
       isFavourite: false,
       type: 'classroom' as const
@@ -112,6 +116,7 @@ export default function RecordingsPage() {
 
     setClassrooms([...classrooms, newClassroom])
     addRecordingToClassroom(selectedRecording, newClassroom.id)
+    setAddedToClassrooms(prev => new Set([...prev, newClassroom.id]))
     setNewClassroomName('')
     setShowCreateClassroom(false)
     setShowClassroomModal(false)
@@ -130,6 +135,19 @@ export default function RecordingsPage() {
       moveRecordingToTrash(recording)
     }
     setShowDeleteConfirm(null)
+  }
+
+  const formatLastActive = (dateStr: string) => {
+    const now = new Date()
+    const date = new Date(dateStr)
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+    
+    if (diffInHours < 24) {
+      return diffInHours === 0 ? 'Just now' : `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`
+    }
+    
+    const diffInDays = Math.floor(diffInHours / 24)
+    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`
   }
 
   return (
@@ -295,24 +313,44 @@ export default function RecordingsPage() {
               </div>
 
               <div className="space-y-4">
-                {classrooms.map((classroom) => (
-                  <button
-                    key={classroom.id}
-                    onClick={() => {
-                      addRecordingToClassroom(selectedRecording!, classroom.id)
-                      setShowClassroomModal(false)
-                      setSelectedRecording(null)
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded-lg flex items-center gap-2"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                    </div>
-                    {classroom.name}
-                  </button>
-                ))}
+                {classrooms.map((classroom) => {
+                  const isAdded = addedToClassrooms.has(classroom.id)
+                  return (
+                    <button
+                      key={classroom.id}
+                      onClick={() => {
+                        if (!isAdded) {
+                          addRecordingToClassroom(selectedRecording!, classroom.id)
+                          setAddedToClassrooms(prev => new Set([...prev, classroom.id]))
+                        }
+                      }}
+                      disabled={isAdded}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 rounded-lg flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                        </div>
+                        <span className="text-gray-700">{classroom.name}</span>
+                      </div>
+                      <div className={`flex items-center gap-2 ${isAdded ? 'text-gray-400' : 'text-blue-500'}`}>
+                        {isAdded ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            <span>Added</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4" />
+                            <span>Add</span>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
 
                 <button
                   onClick={() => setShowCreateClassroom(true)}

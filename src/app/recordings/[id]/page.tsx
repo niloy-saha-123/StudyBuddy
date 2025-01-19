@@ -11,10 +11,11 @@ import {
   ClipboardList,
   ChevronLeft,
   Volume2,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  Check
 } from 'lucide-react'
-import { type RecordingWithMeta } from '@/components/recording/types'
-import { formatDistance } from 'date-fns'
+import type { RecordingWithMeta } from '@/components/recording/types'
 import { useAppState } from '@/context/AppStateContext'
 
 export default function RecordingPage() {
@@ -22,7 +23,7 @@ export default function RecordingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const from = searchParams.get('from')
-  const { classrooms } = useAppState()
+  const { classrooms, addRecordingToClassroom } = useAppState()
   
   // Core states
   const [isMounted, setIsMounted] = useState(false)
@@ -33,6 +34,10 @@ export default function RecordingPage() {
   const [volume, setVolume] = useState(1)
   const [expandedTranscription, setExpandedTranscription] = useState(false)
   const [expandedSummary, setExpandedSummary] = useState(false)
+  const [isAddingToClassroom, setIsAddingToClassroom] = useState(false)
+  const [addedClassroomIds, setAddedClassroomIds] = useState<Set<string>>(new Set())
+  const [showCreateClassroom, setShowCreateClassroom] = useState(false)
+  const [newClassroomName, setNewClassroomName] = useState('')
   
   // Audio refs
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -74,10 +79,16 @@ export default function RecordingPage() {
             setIsPlaying(false)
             setCurrentTime(0)
           })
+
+          // Initialize added classrooms
+          const recordingClassrooms = classrooms
+            .filter(c => c.recordings?.includes(currentRecording.id))
+            .map(c => c.id)
+          setAddedClassroomIds(new Set(recordingClassrooms))
         }
       }
     }
-  }, [params.id, isMounted, volume])
+  }, [params.id, isMounted, volume, classrooms])
 
   // Cleanup audio on unmount
   useEffect(() => {
@@ -90,6 +101,34 @@ export default function RecordingPage() {
       }
     }
   }, [])
+
+  const handleAddToClassroom = (classroomId: string) => {
+    if (recording && !addedClassroomIds.has(classroomId)) {
+      addRecordingToClassroom(recording.id, classroomId)
+      setAddedClassroomIds(prev => new Set([...prev, classroomId]))
+    }
+  }
+
+  const handleCreateClassroom = () => {
+    if (!newClassroomName.trim() || !recording) return
+
+    const colors = ['blue', 'purple', 'green', 'pink'] as const
+    const newClassroom = {
+      id: Date.now().toString(),
+      name: newClassroomName.trim(),
+      lectureCount: 0,
+      lastActive: new Date().toISOString(),
+      color: colors[classrooms.length % colors.length],
+      isFavourite: false,
+      type: 'classroom' as const
+    }
+
+    addRecordingToClassroom(recording.id, newClassroom.id)
+    setAddedClassroomIds(prev => new Set([...prev, newClassroom.id]))
+    setNewClassroomName('')
+    setShowCreateClassroom(false)
+    setIsAddingToClassroom(false)
+  }
 
   const getBackButtonText = () => {
     if (from?.startsWith('/classroom/')) {
@@ -308,9 +347,16 @@ export default function RecordingPage() {
                 {recording.title || `Recording from ${formatDate(recording.createdAt)}`}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
-                {recording.method === 'uploaded' ? 'Uploaded' : 'Recorded'} {formatDistance(recording.createdAt, new Date(), { addSuffix: true })}
+                {recording.method === 'uploaded' ? 'Uploaded' : 'Recorded'} on {formatDate(recording.createdAt)}
               </p>
             </div>
+            <button
+              onClick={() => setIsAddingToClassroom(true)}
+              className="flex items-center gap-2 px-4 py-2 text-blue-500 hover:bg-blue-50 rounded-lg"
+            >
+              <Plus className="w-5 h-5" />
+              Add to Classroom
+            </button>
           </div>
 
           {/* Audio Player */}
@@ -376,103 +422,201 @@ export default function RecordingPage() {
 
             {recording.transcription && (
               <button
-                onClick={summarizeTranscription}
-                disabled={recording.isSummarizing}
-                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                  recording.isSummarizing
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-500 text-white hover:bg-green-600'
-                }`}
-              >
-                <ClipboardList className="w-5 h-5" />
-                {recording.isSummarizing ? 'Summarizing...' : 'Summarize'}
-              </button>
-            )}
-          </div>
-
-          {/* Error Message */}
-          {recording.error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-600">{recording.error}</p>
-            </div>
+              onClick={summarizeTranscription}
+              disabled={recording.isSummarizing}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                recording.isSummarizing
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
+            >
+              <ClipboardList className="w-5 h-5" />
+              {recording.isSummarizing ? 'Summarizing...' : 'Summarize'}
+            </button>
           )}
+        </div>
 
-          {/* Content Sections */}
-          <div className="space-y-6">
-            {/* Transcription Section */}
-            {recording.transcription && (
-              <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Transcription
-                  </h2>
-                </div>
-                <div className="prose max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {recording.transcription.length > 300 && !expandedTranscription
-                      ? `${recording.transcription.slice(0, 300)}...`
-                      : recording.transcription}
-                  </p>
-                  {recording.transcription.length > 300 && (
-                    <button
-                      onClick={() => setExpandedTranscription(!expandedTranscription)}
-                      className="text-blue-500 hover:text-blue-600 mt-4"
-                    >
-                      {expandedTranscription ? 'Show less' : 'Show more'}
-                    </button>
-                    )}
-                    </div>
-                  </div>
-                )}
-     
-                {/* Summary Section */}
-                {recording.summary && (
-                  <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-semibold text-green-800 flex items-center gap-2">
-                        <ClipboardList className="w-5 h-5" />
-                        Summary
-                      </h2>
-                    </div>
-                    <div className="prose max-w-none">
-                      <ReactMarkdown 
-                        className="text-gray-700 leading-relaxed"
-                        components={{
-                          h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
-                          h2: ({node, ...props}) => <h2 className="text-xl font-semibold mt-4 mb-3" {...props} />,
-                          h3: ({node, ...props}) => <h3 className="text-lg font-medium mt-3 mb-2" {...props} />,
-                          strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
-                          em: ({node, ...props}) => <em className="italic" {...props} />,
-                          blockquote: ({node, ...props}) => (
-                            <blockquote className="border-l-4 border-green-500 pl-4 my-4 italic" {...props} />
-                          ),
-                          ul: ({node, ...props}) => <ul className="list-disc pl-6 my-4" {...props} />,
-                          ol: ({node, ...props}) => <ol className="list-decimal pl-6 my-4" {...props} />,
-                          li: ({node, ...props}) => <li className="my-1" {...props} />,
-                          p: ({node, ...props}) => <p className="my-2" {...props} />,
-                        }}
-                      >
-                        {recording.summary.length > 300 && !expandedSummary
-                          ? `${recording.summary.slice(0, 300)}...`
-                          : recording.summary
-                        }
-                      </ReactMarkdown>
-                      {recording.summary.length > 300 && (
-                        <button
-                          onClick={() => setExpandedSummary(!expandedSummary)}
-                          className="text-green-500 hover:text-green-600 mt-4"
-                        >
-                          {expandedSummary ? 'Show less' : 'Show more'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
+        {/* Error Message */}
+        {recording.error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-600">{recording.error}</p>
+          </div>
+        )}
+
+        {/* Content Sections */}
+        <div className="space-y-6">
+          {/* Transcription Section */}
+          {recording.transcription && (
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Transcription
+                </h2>
+              </div>
+              <div className="prose max-w-none">
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {recording.transcription.length > 300 && !expandedTranscription
+                    ? `${recording.transcription.slice(0, 300)}...`
+                    : recording.transcription}
+                </p>
+                {recording.transcription.length > 300 && (
+                  <button
+                    onClick={() => setExpandedTranscription(!expandedTranscription)}
+                    className="text-blue-500 hover:text-blue-600 mt-4"
+                  >
+                    {expandedTranscription ? 'Show less' : 'Show more'}
+                  </button>
                 )}
               </div>
             </div>
+          )}
+
+          {/* Summary Section */}
+          {recording.summary && (
+            <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-green-800 flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5" />
+                  Summary
+                </h2>
+              </div>
+              <div className="prose max-w-none">
+                <ReactMarkdown 
+                  className="text-gray-700 leading-relaxed"
+                  components={{
+                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-xl font-semibold mt-4 mb-3" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-lg font-medium mt-3 mb-2" {...props} />,
+                    strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
+                    em: ({node, ...props}) => <em className="italic" {...props} />,
+                    blockquote: ({node, ...props}) => (
+                      <blockquote className="border-l-4 border-green-500 pl-4 my-4 italic" {...props} />
+                    ),
+                    ul: ({node, ...props}) => <ul className="list-disc pl-6 my-4" {...props} />,
+                    ol: ({node, ...props}) => <ol className="list-decimal pl-6 my-4" {...props} />,
+                    li: ({node, ...props}) => <li className="my-1" {...props} />,
+                    p: ({node, ...props}) => <p className="my-2" {...props} />,
+                  }}
+                >
+                  {recording.summary.length > 300 && !expandedSummary
+                    ? `${recording.summary.slice(0, 300)}...`
+                    : recording.summary
+                  }
+                </ReactMarkdown>
+                {recording.summary.length > 300 && (
+                  <button
+                    onClick={() => setExpandedSummary(!expandedSummary)}
+                    className="text-green-500 hover:text-green-600 mt-4"
+                  >
+                    {expandedSummary ? 'Show less' : 'Show more'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add to Classroom Modal */}
+      {isAddingToClassroom && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 w-[600px] max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-semibold text-gray-800">Add to Classroom</h3>
+              <button 
+                onClick={() => setIsAddingToClassroom(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {classrooms.map((classroom) => {
+                const isAdded = addedClassroomIds.has(classroom.id)
+                return (
+                  <button
+                    key={classroom.id}
+                    onClick={() => !isAdded && handleAddToClassroom(classroom.id)}
+                    disabled={isAdded}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 rounded-lg flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                      </div>
+                      <span className="text-gray-700">{classroom.name}</span>
+                    </div>
+                    <div className={`flex items-center gap-2 ${isAdded ? 'text-gray-400' : 'text-blue-500'}`}>
+                      {isAdded ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Added</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4" />
+                          <span>Add</span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+
+              <button
+                onClick={() => setShowCreateClassroom(true)}
+                className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 rounded-lg flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Create New Classroom
+              </button>
+            </div>
           </div>
-        </DashboardLayout>
-      )
-     }
+        </div>
+      )}
+
+      {/* Create Classroom Modal */}
+      {showCreateClassroom && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Create New Classroom</h2>
+            <input
+              type="text"
+              placeholder="Enter classroom name"
+              value={newClassroomName}
+              onChange={(e) => setNewClassroomName(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 text-gray-900"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowCreateClassroom(false)
+                  setNewClassroomName('')
+                }}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateClassroom}
+                disabled={!newClassroomName.trim()}
+                className="px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </DashboardLayout>
+)
+}

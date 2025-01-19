@@ -63,6 +63,19 @@ export default function ClassroomCard({
     pink: 'from-pink-400 to-pink-600'
   }
 
+  const formatLastActive = (dateStr: string) => {
+    const now = new Date()
+    const date = new Date(dateStr)
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+    
+    if (diffInHours < 24) {
+      return diffInHours === 0 ? 'Just now' : `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`
+    }
+    
+    const diffInDays = Math.floor(diffInHours / 24)
+    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`
+  }
+
   return (
     <>
       <div 
@@ -97,10 +110,9 @@ export default function ClassroomCard({
             <h3 className="text-lg font-semibold text-gray-800 mb-1 group-hover:text-blue-500 transition-colors">
               {name}
             </h3>
-            <div className="flex flex-col text-sm text-gray-500">
-              <span>{lectureCount} Lectures</span>
-              <span>Last Active: {lastActive}</span>
-            </div>
+            <p className="text-sm text-gray-500">
+              {lectureCount} {lectureCount === 1 ? 'Lecture' : 'Lectures'} • Last Active: {formatLastActive(lastActive)}
+            </p>
           </div>
 
           {!isInTrash && (
@@ -191,6 +203,7 @@ export default function ClassroomCard({
         )}
       </div>
 
+      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
           <div className="bg-white rounded-lg p-6 w-[400px] animate-in slide-in-from-bottom-4 duration-200">
@@ -219,6 +232,7 @@ export default function ClassroomCard({
         </div>
       )}
 
+      {/* Permanent Delete Confirmation Modal */}
       {showPermanentDeleteConfirm && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999] animate-in fade-in duration-200">
           <div className="bg-white rounded-lg p-6 w-[400px] animate-in slide-in-from-bottom-4 duration-200">
