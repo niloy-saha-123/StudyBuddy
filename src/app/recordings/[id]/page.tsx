@@ -12,18 +12,14 @@ import {
   ChevronLeft,
   Volume2,
   AlertTriangle,
-  Plus,
-  Check
 } from 'lucide-react'
 import type { RecordingWithMeta } from '@/components/recording/types'
-import { useAppState } from '@/context/AppStateContext'
 
 export default function RecordingPage() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
   const from = searchParams.get('from')
-  const { classrooms, addRecordingToClassroom } = useAppState()
   
   // Core states
   const [isMounted, setIsMounted] = useState(false)
@@ -34,10 +30,6 @@ export default function RecordingPage() {
   const [volume, setVolume] = useState(1)
   const [expandedTranscription, setExpandedTranscription] = useState(false)
   const [expandedSummary, setExpandedSummary] = useState(false)
-  const [isAddingToClassroom, setIsAddingToClassroom] = useState(false)
-  const [addedClassroomIds, setAddedClassroomIds] = useState<Set<string>>(new Set())
-  const [showCreateClassroom, setShowCreateClassroom] = useState(false)
-  const [newClassroomName, setNewClassroomName] = useState('')
   const [transcribingRecordingId, setTranscribingRecordingId] = useState<string | null>(null)
   const [transcriptionError, setTranscriptionError] = useState<string | null>(null)
   
@@ -81,16 +73,10 @@ export default function RecordingPage() {
             setIsPlaying(false)
             setCurrentTime(0)
           })
-
-          // Initialize added classrooms
-          const recordingClassrooms = classrooms
-            .filter(c => c.recordings?.includes(currentRecording.id))
-            .map(c => c.id)
-          setAddedClassroomIds(new Set(recordingClassrooms))
         }
       }
     }
-  }, [params.id, isMounted, volume, classrooms])
+  }, [params.id, isMounted, volume])
 
   // Cleanup audio on unmount
   useEffect(() => {
@@ -103,34 +89,6 @@ export default function RecordingPage() {
       }
     }
   }, [])
-
-  const handleAddToClassroom = (classroomId: string) => {
-    if (recording && !addedClassroomIds.has(classroomId)) {
-      addRecordingToClassroom(recording.id, classroomId)
-      setAddedClassroomIds(prev => new Set([...prev, classroomId]))
-    }
-  }
-
-  const handleCreateClassroom = () => {
-    if (!newClassroomName.trim() || !recording) return
-
-    const colors = ['blue', 'purple', 'green', 'pink'] as const
-    const newClassroom = {
-      id: Date.now().toString(),
-      name: newClassroomName.trim(),
-      lectureCount: 0,
-      lastActive: new Date().toISOString(),
-      color: colors[classrooms.length % colors.length],
-      isFavourite: false,
-      type: 'classroom' as const
-    }
-
-    addRecordingToClassroom(recording.id, newClassroom.id)
-    setAddedClassroomIds(prev => new Set([...prev, newClassroom.id]))
-    setNewClassroomName('')
-    setShowCreateClassroom(false)
-    setIsAddingToClassroom(false)
-  }
 
   const handleTranscribe = async () => {
     if (!recording) return
@@ -203,12 +161,6 @@ export default function RecordingPage() {
   }
 
   const getBackButtonText = () => {
-    if (from?.startsWith('/classroom/')) {
-      const classroomId = from.split('/')[2]
-      const classroom = classrooms.find(c => c.id === classroomId)
-      return `Back to ${classroom?.name || 'Classroom'}`
-    }
-
     switch(from) {
       case '/favourites':
         return 'Back to Favourites'
@@ -216,56 +168,6 @@ export default function RecordingPage() {
         return 'Back to Dashboard'
       default:
         return 'Back to Recordings'
-    }
-  }
-
-  // Transcribe functionality
-  const transcribeAudio = async () => {
-    if (!recording) return
-
-    try {
-      setRecording(prev => prev ? {
-        ...prev,
-        isTranscribing: true,
-        error: undefined
-      } : null)
-
-      const response = await fetch(recording.audioUrl)
-      const audioBlob = await response.blob()
-      const formData = new FormData()
-      formData.append('file', audioBlob, 'recording.wav')
-
-      const transcribeResponse = await fetch('/api/transcribe', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!transcribeResponse.ok) {
-        throw new Error(`Transcription failed: ${transcribeResponse.statusText}`)
-      }
-
-      const data = await transcribeResponse.json()
-      
-      if (!data.success) {
-        throw new Error(data.message || 'No speech detected in the recording')
-      }
-
-      const updatedRecording = {
-        ...recording,
-        transcription: data.transcription,
-        isTranscribing: false,
-        audioUrl: data.fileUrl
-      }
-
-      setRecording(updatedRecording)
-      updateLocalStorage(updatedRecording)
-    } catch (err) {
-      setRecording(prev => prev ? {
-        ...prev,
-        isTranscribing: false,
-        error: err instanceof Error ? err.message : 'Transcription failed'
-      } : null)
-      console.error('Transcription error:', err)
     }
   }
 
@@ -422,13 +324,6 @@ export default function RecordingPage() {
                 {recording.method === 'uploaded' ? 'Uploaded' : 'Recorded'} on {formatDate(recording.createdAt)}
               </p>
             </div>
-            <button
-              onClick={() => setIsAddingToClassroom(true)}
-              className="flex items-center gap-2 px-4 py-2 text-blue-500 hover:bg-blue-50 rounded-lg"
-            >
-              <Plus className="w-5 h-5" />
-              Add to Classroom
-            </button>
           </div>
 
           {/* Audio Player */}
@@ -592,105 +487,8 @@ export default function RecordingPage() {
           )}
         </div>
       </div>
-
-      {/* Add to Classroom Modal */}
-      {isAddingToClassroom && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-lg p-6 w-[600px] max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-800">Add to Classroom</h3>
-              <button 
-                onClick={() => setIsAddingToClassroom(false)}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {classrooms.map((classroom) => {
-                const isAdded = addedClassroomIds.has(classroom.id)
-                return (
-                  <button
-                    key={classroom.id}
-                    onClick={() => !isAdded && handleAddToClassroom(classroom.id)}
-                    disabled={isAdded}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 rounded-lg flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                      </div>
-                      <span className="text-gray-700">{classroom.name}</span>
-                    </div>
-                    <div className={`flex items-center gap-2 ${isAdded ? 'text-gray-400' : 'text-blue-500'}`}>
-                      {isAdded ? (
-                        <>
-                          <Check className="w-4 h-4" />
-                          <span>Added</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4" />
-                          <span>Add</span>
-                        </>
-                      )}
-                    </div>
-                  </button>
-                )
-              })}
-
-              <button
-                onClick={() => setShowCreateClassroom(true)}
-                className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 rounded-lg flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Create New Classroom
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Classroom Modal */}
-      {showCreateClassroom && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[9999]">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Create New Classroom</h2>
-            <input
-              type="text"
-              placeholder="Enter classroom name"
-              value={newClassroomName}
-              onChange={(e) => setNewClassroomName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 text-gray-900"
-              autoFocus
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setShowCreateClassroom(false)
-                  setNewClassroomName('')
-                }}
-                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateClassroom}
-                disabled={!newClassroomName.trim()}
-                className="px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  </DashboardLayout>
-)
+      </div>
+    </DashboardLayout>
+    
+  )
 }

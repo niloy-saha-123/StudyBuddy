@@ -187,38 +187,109 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       return updatedRecordings
     })
   }
-
-  const addRecordingToClassroom = (recordingId: string, classroomId: string) => {
+  const addRecordingToClassroom = (recordingId: string, classroomId: string | Classroom) => {
+    const targetClassroomId = typeof classroomId === 'string' 
+      ? classroomId 
+      : classroomId.id
+  
+    const colors = ['blue', 'purple', 'green', 'pink'] as const
+  
     setClassrooms(current => {
-      const updatedClassrooms = current.map(classroom => {
-        if (classroom.id === classroomId) {
-          const currentRecordings = classroom.recordings || []
-          if (!currentRecordings.includes(recordingId)) {
-            return {
-              ...classroom,
-              recordings: [...currentRecordings, recordingId],
-              lectureCount: classroom.lectureCount + 1,
-              lastActive: new Date().toISOString()
-            }
+      // Create a deep copy of current classrooms to avoid mutation
+      let updatedClassrooms = JSON.parse(JSON.stringify(current))
+      
+      // Find if the classroom already exists
+      const existingClassroomIndex = updatedClassrooms.findIndex(
+        (classroom: Classroom) => classroom.id === targetClassroomId
+      )
+  
+      const now = new Date().toISOString()
+  
+      if (existingClassroomIndex !== -1) {
+        // Existing classroom: update recordings
+        const existingClassroom = updatedClassrooms[existingClassroomIndex]
+        const currentRecordings = existingClassroom.recordings || []
+        
+        if (!currentRecordings.includes(recordingId)) {
+          updatedClassrooms[existingClassroomIndex] = {
+            ...existingClassroom,
+            recordings: [...currentRecordings, recordingId],
+            lectureCount: (existingClassroom.lectureCount || 0) + 1,
+            lastActive: now,
+            color: existingClassroom.color || colors[updatedClassrooms.length % colors.length]
           }
         }
-        return classroom
-      })
-      saveClassroomsToStorage(updatedClassrooms)
+      } else {
+        // New classroom creation logic
+        const newClassroom: Classroom = typeof classroomId === 'string' 
+          ? {
+              id: targetClassroomId,
+              name: 'New Classroom',
+              recordings: [recordingId],
+              lectureCount: 1,
+              lastActive: now,
+              color: colors[current.length % colors.length],
+              isFavourite: false,
+              type: 'classroom' as const
+            }
+          : {
+              ...classroomId,
+              recordings: [recordingId],
+              lectureCount: 1,
+              lastActive: now,
+              color: classroomId.color || colors[current.length % colors.length],
+              type: 'classroom' as const
+            }
+  
+        updatedClassrooms.push(newClassroom)
+      }
+  
+      // Ensure immediate and persistent storage
+      try {
+        // Get existing classrooms from localStorage
+        const existingClassrooms = JSON.parse(
+          localStorage.getItem(STORAGE_KEYS.CLASSROOMS) || '[]'
+        )
+  
+        // Merge new classrooms with existing ones
+        const finalClassrooms = [...existingClassrooms]
+        updatedClassrooms.forEach((newClassroom: Classroom) => {
+          const existingIndex = finalClassrooms.findIndex(c => c.id === newClassroom.id)
+          if (existingIndex !== -1) {
+            // Update existing classroom
+            finalClassrooms[existingIndex] = newClassroom
+          } else {
+            // Add new classroom
+            finalClassrooms.push(newClassroom)
+          }
+        })
+  
+        // Save to localStorage
+        localStorage.setItem(STORAGE_KEYS.CLASSROOMS, JSON.stringify(finalClassrooms))
+      } catch (error) {
+        console.error('Failed to save classrooms to localStorage:', error)
+      }
+      
       return updatedClassrooms
     })
     
+    // Update recordings
     setRecordings(current => {
       const updatedRecordings = current.map(recording =>
         recording.id === recordingId
-          ? { ...recording, classroomId }
+          ? { ...recording, classroomId: targetClassroomId }
           : recording
       )
-      localStorage.setItem(STORAGE_KEYS.RECORDINGS, JSON.stringify(updatedRecordings))
+  
+      try {
+        localStorage.setItem(STORAGE_KEYS.RECORDINGS, JSON.stringify(updatedRecordings))
+      } catch (error) {
+        console.error('Failed to save recordings to localStorage:', error)
+      }
+      
       return updatedRecordings
     })
   }
-
   const removeRecordingFromClassroom = (recordingId: string, classroomId: string) => {
     setClassrooms(current => {
       const updatedClassrooms = current.map(classroom =>
@@ -245,7 +316,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       return updatedRecordings
     })
   }
-
   // Trash management
   const moveToTrash = (classroom: Classroom) => {
     const currentIndex = classrooms.findIndex(c => c.id === classroom.id)
@@ -362,38 +432,64 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   // Auto-delete trash items after 30 days
   useEffect(() => {
-    const checkTrashItems = () => {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-      setTrashedItems(prevItems => 
-        prevItems.filter(item => {
-          if (!item.deletedAt) return true
-          const deleteDate = new Date(item.deletedAt)
-          if (deleteDate <= thirtyDaysAgo) {
-            if (item.type === 'recording') {
-              const storedRecordings = JSON.parse(localStorage.getItem(STORAGE_KEYS.RECORDINGS) || '[]')
-              const updatedStoredRecordings = storedRecordings.filter(
-                (rec: RecordingWithMeta) => rec.id !== item.id
-              )
-              localStorage.setItem(STORAGE_KEYS.RECORDINGS, JSON.stringify(updatedStoredRecordings))
-            } else {
-              const storedClassrooms = JSON.parse(localStorage.getItem(STORAGE_KEYS.CLASSROOMS) || '[]')
-              const updatedStoredClassrooms = storedClassrooms.filter(
-                (classroom: Classroom) => classroom.id !== item.id
-              )
-              localStorage.setItem(STORAGE_KEYS.CLASSROOMS, JSON.stringify(updatedStoredClassrooms))
-            }
-            return false
-          }
-          return true
-        })
-      )
+    const storedRecordings = localStorage.getItem(STORAGE_KEYS.RECORDINGS)
+    if (storedRecordings) {
+      try {
+        const parsedRecordings: RecordingWithMeta[] = JSON.parse(storedRecordings)
+          .map((rec: RecordingWithMeta) => ({
+            ...rec,
+            createdAt: new Date(rec.createdAt),
+            type: 'recording'
+          }))
+        
+        // Remove duplicates and sort
+        const uniqueRecordings = [...new Map(parsedRecordings.map(rec => [rec.id, rec])).values()]
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  
+        setRecordings(uniqueRecordings)
+  
+        // Initialize favorites from recordings
+        const favoriteRecordings = uniqueRecordings.filter(rec => rec.isFavourite)
+        setFavourites(current => [...current, ...favoriteRecordings])
+      } catch (error) {
+        console.error('Error loading recordings:', error)
+      }
     }
+  
+    // Load classrooms
+    const storedClassrooms = localStorage.getItem(STORAGE_KEYS.CLASSROOMS)
+  console.log('Stored Classrooms:', storedClassrooms)
+  
+  if (storedClassrooms) {
+    try {
+      const parsedClassrooms: Classroom[] = JSON.parse(storedClassrooms)
+        .map((classroom: Classroom) => ({
+          ...classroom,
+          type: 'classroom',
+          // Ensure all required properties exist
+          recordings: classroom.recordings || [],
+          lectureCount: classroom.lectureCount || 0,
+          lastActive: classroom.lastActive || new Date().toISOString(),
+          color: classroom.color || 'blue'
+        }))
+      
+      console.log('Parsed Classrooms:', parsedClassrooms)
+      
+      // Validate classrooms before setting
+      const validClassrooms = parsedClassrooms.filter(classroom => 
+        classroom.id && classroom.name
+      )
+      
+      setClassrooms(validClassrooms)
 
-    checkTrashItems()
-    const interval = setInterval(checkTrashItems, 1000 * 60 * 60) // Check every hour
-    return () => clearInterval(interval)
+      // Initialize favorites from classrooms
+      const favoriteClassrooms = validClassrooms.filter(classroom => classroom.isFavourite)
+      setFavourites(current => [...current, ...favoriteClassrooms])
+    } catch (error) {
+      console.error('Error loading classrooms:', error)
+    }
+  }
   }, [])
 
   const updateRecordingTitle = (id: string, newTitle: string) => {
