@@ -413,7 +413,6 @@ export default function RecordingPage() {
           </div>
         )}
 
-     
         {/* Content Sections */}
         <div className="space-y-6">
           {/* Transcription Section */}

@@ -18,7 +18,10 @@ export async function POST(req) {
   try {
     // Validate OpenAI API key
     if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OpenAI API key is not configured');
+      return NextResponse.json(
+        { error: 'OpenAI API key is not configured' },
+        { status: 500 }
+      );
     }
 
     const formData = await req.formData();
@@ -40,6 +43,14 @@ export async function POST(req) {
     
     console.log('File size:', buffer.length);
 
+    // Check file size (25MB limit)
+    if (buffer.length > 25 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'Audio file is too large (max 25MB)' },
+        { status: 413 }
+      );
+    }
+
     // Create necessary directories
     const tempDir = path.join(process.cwd(), 'tmp');
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
@@ -56,21 +67,27 @@ export async function POST(req) {
     // Write the temp file
     await fs.promises.writeFile(tempFilePath, buffer);
 
-    // Create a File object for OpenAI
-    const file = await OpenAI.toFile(
-      fs.createReadStream(tempFilePath),
-      'audio.wav'
-    );
+    let transcription;
+    try {
+      // Create a File object for OpenAI
+      const file = await OpenAI.toFile(
+        fs.createReadStream(tempFilePath),
+        'audio.wav'
+      );
 
-    // Transcribe using OpenAI's Whisper API
-    console.log('Starting transcription...');
-    const transcription = await openai.audio.transcriptions.create({
-      file: file,
-      model: 'whisper-1',
-      language: 'en',
-      response_format: 'json'
-    });
-    console.log('Transcription completed');
+      // Transcribe using OpenAI's Whisper API
+      console.log('Starting transcription...');
+      transcription = await openai.audio.transcriptions.create({
+        file: file,
+        model: 'whisper-1',
+        language: 'en',
+        response_format: 'json'
+      });
+      console.log('Transcription completed');
+    } catch (openaiError) {
+      console.error('OpenAI API Error:', openaiError);
+      throw new Error('Failed to transcribe audio: ' + openaiError.message);
+    }
 
     // Save the file to public uploads
     await fs.promises.writeFile(outputFilePath, buffer);
@@ -81,8 +98,10 @@ export async function POST(req) {
     }
 
     return NextResponse.json({
+      success: true,
       transcription: transcription.text,
-      fileUrl: `/uploads/${outputFileName}`
+      fileUrl: `/uploads/${outputFileName}`,
+      audioUrl: `/uploads/${outputFileName}` // Added this to match your client expectations
     });
 
   } catch (error) {
@@ -114,6 +133,7 @@ export async function POST(req) {
 
     return NextResponse.json(
       { 
+        success: false,
         error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       },
