@@ -26,11 +26,36 @@ export async function POST(request: Request) {
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     // Construct the prompt
-    const prompt = `Generate detailed, comprehensive notes based on the transcription, adding relevant information and insights that might not be explicitly mentioned but are critical for exam preparation. Structure the content with clear sections, highlighting each key concept in bold. For every key concept, provide a dedicated paragraph that includes a clear explanation, examples, and its relevance to the topic. Also, include potential exam questions at the end of the notes to help students anticipate test scenarios. Ensure the notes are concise, well-organized, and formatted for easy study from the following transcription:
+    const prompt = `Generate detailed, comprehensive notes based on the provided transcription.
+
+1. Determine the Main Topic: Identify the central theme or subject of the transcription. Use this as the main heading for the notes.
+
+2. Identify and Explain Key Concepts:
+* Extract the most important information and concepts from the transcription.
+* For each key concept:
+* Provide clear and concise definitions.
+* Include relevant examples to illustrate the concept.
+* Explain the significance and relevance of the concept within the broader topic.
+
+3. Structure for Clarity:
+* Organize the notes with clear sections and subheadings to improve readability and facilitate easy study.
+* Use bullet points, lists, and other formatting techniques for enhanced clarity.
+
+4. Conciseness and Clarity:
+* Ensure the notes are concise, well-organized, and free of irrelevant information.
+* Use precise and accurate language throughout.
+
+5. Potential Exam Questions:
+* Include a section with potential exam questions (multiple choice, short answer, etc.) at the end of the notes to help students prepare for assessments.
+
+Key Considerations:
+
+Relevance: Only include information directly related to the main topic of the transcription.
+Depth: Go beyond surface-level information to provide a deeper understanding of the concepts.
+Study-friendly format: Use clear formatting (headings, bullet points, etc.) to make the notes easy to read and review.
+I
     
-    ${body.transcription}
-    
-    Summary:`;
+    ${body.transcription}`;
 
     // Generate content
     const result = await model.generateContent(prompt);
