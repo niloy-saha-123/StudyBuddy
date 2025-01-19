@@ -71,7 +71,7 @@ export default function ProfileMenu() {
           <div className="py-2">
             {/* Profile Settings - Opens Clerk User Profile */}
             <button 
-              onClick={() => window.location.href = '/user-profile'} 
+              onClick={() => router.push('/profile-settings')}
               className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
             >
               <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

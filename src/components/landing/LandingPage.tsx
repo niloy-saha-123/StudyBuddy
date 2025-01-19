@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   Mic, 
   Brain, 
   BookOpen,
   Zap as Lightning,
-  ChevronRight,
   Linkedin 
 } from 'lucide-react'
 import Image from 'next/image'
@@ -14,6 +14,7 @@ import MohammedFarazKabbo from '/public/uploads/faraz.jpg'
 import NiloySaha from '/public/uploads/Niloy.jpg'
 
 const LandingPage = () => {
+  const router = useRouter()
   const [typedText, setTypedText] = useState('')
   const fullText = 'Your AI powered studybuddy is here'
   const [isVisible, setIsVisible] = useState(false)
@@ -73,6 +74,10 @@ const LandingPage = () => {
     }
   ]
 
+  const handleGetStarted = () => {
+    router.push('/signup')
+  }
+
   return (
     <div className="min-h-screen bg-[#14171F]">
       {/* Hero Section */}
@@ -110,21 +115,17 @@ const LandingPage = () => {
               organized study materials, transcriptions, and summaries - all in real-time.
             </p>
 
-            {/* CTA Buttons */}
-            <div className={`flex flex-col sm:flex-row gap-4 pt-4
-                           transform transition-all duration-1000 delay-700 
+            {/* CTA Button */}
+            <div className={`transform transition-all duration-1000 delay-700 
                            ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-              <button className="px-8 py-4 bg-blue-500 text-white rounded-xl text-lg font-medium 
-                               hover:bg-blue-600 transition-all duration-300 
-                               shadow-lg shadow-blue-500/25 hover:scale-105
-                               animate-buttonPulse">
+              <button 
+                onClick={handleGetStarted}
+                className="px-8 py-4 bg-blue-500 text-white rounded-xl text-lg font-medium 
+                         hover:bg-blue-600 transition-all duration-300 
+                         shadow-lg shadow-blue-500/25 hover:scale-105
+                         animate-buttonPulse"
+              >
                 Start Learning Smarter
-              </button>
-              <button className="px-8 py-4 border-2 border-blue-500/30 text-blue-400 rounded-xl 
-                               hover:bg-blue-500/10 transition-all duration-300 text-lg font-medium 
-                               group flex items-center justify-center hover:border-blue-500">
-                Watch Demo
-                <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
@@ -289,9 +290,12 @@ const LandingPage = () => {
             <p className="text-gray-400 mb-8">
               Join today and experience the future of study assistance.
             </p>
-            <button className="px-8 py-4 bg-blue-500 text-white rounded-xl text-lg font-medium 
-                             hover:bg-blue-600 transition-all duration-300 
-                             shadow-lg shadow-blue-500/25">
+            <button 
+              onClick={handleGetStarted}
+              className="px-8 py-4 bg-blue-500 text-white rounded-xl text-lg font-medium 
+                       hover:bg-blue-600 transition-all duration-300 
+                       shadow-lg shadow-blue-500/25"
+            >
               Get Started For Free
             </button>
           </div>

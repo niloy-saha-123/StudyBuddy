@@ -8,7 +8,6 @@ import type {
   AppStateContextType 
 } from '@/components/recording/types'
 
-<<<<<<< HEAD
 // Dark mode state with localStorage persistence
 const useDarkMode = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -27,7 +26,7 @@ const useDarkMode = () => {
 
   // Dark Mode Toggle with localStorage persistence
   const toggleDarkMode = useCallback(() => {
-    setIsDarkMode(prev => {
+    setIsDarkMode((prev: boolean) => {  // Added explicit boolean type
       const newMode = !prev
       try {
         localStorage.setItem('darkMode', JSON.stringify(newMode))
@@ -49,35 +48,26 @@ const useDarkMode = () => {
 
   return { isDarkMode, toggleDarkMode }
 }
-=======
+
 const STORAGE_KEYS = {
   RECORDINGS: 'voiceRecordings',
   CLASSROOMS: 'classrooms',
   FAVOURITES: 'favourites'
 } as const
->>>>>>> feature/dashboard
 
 const AppStateContext = createContext<AppStateContextType | null>(null)
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
-<<<<<<< HEAD
   // Dark mode state
   const { isDarkMode, toggleDarkMode } = useDarkMode()
 
-  // Main states
-  const [classrooms, setClassrooms] = useState<Classroom[]>([])
-  const [recordings, setRecordings] = useState<RecordingWithMeta[]>([])
-  const [favourites, setFavourites] = useState<TrashableItem[]>([])
-  const [trashedItems, setTrashedItems] = useState<TrashableItem[]>([])
-=======
   const [classroomsState, setClassroomsState] = useState<Classroom[]>([])
   const [recordingsState, setRecordingsState] = useState<RecordingWithMeta[]>([])
   const [favouritesState, setFavouritesState] = useState<TrashableItem[]>([])
   const [trashedItemsState, setTrashedItemsState] = useState<TrashableItem[]>([])
->>>>>>> feature/dashboard
 
   // Enhanced state setters with localStorage sync
-  const setClassrooms = (newClassrooms: Classroom[] | ((current: Classroom[]) => Classroom[])) => {
+  const setClassrooms = useCallback((newClassrooms: Classroom[] | ((current: Classroom[]) => Classroom[])) => {
     try {
       const updatedClassrooms = typeof newClassrooms === 'function' 
         ? newClassrooms(classroomsState)
@@ -88,9 +78,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error saving classrooms to localStorage:', error)
     }
-  }
+  }, [classroomsState])
 
-  const setRecordings = (newRecordings: RecordingWithMeta[] | ((current: RecordingWithMeta[]) => RecordingWithMeta[])) => {
+  const setRecordings = useCallback((newRecordings: RecordingWithMeta[] | ((current: RecordingWithMeta[]) => RecordingWithMeta[])) => {
     try {
       const updatedRecordings = typeof newRecordings === 'function'
         ? newRecordings(recordingsState)
@@ -101,7 +91,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error saving recordings to localStorage:', error)
     }
-  }
+  }, [recordingsState])
 
   // Initialize state from localStorage
   useEffect(() => {
@@ -115,12 +105,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
             createdAt: new Date(rec.createdAt),
             type: 'recording'
           }))
-<<<<<<< HEAD
-          .sort((a: RecordingWithMeta, b: RecordingWithMeta) => 
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          )
-        setRecordings(parsedRecordings)
-=======
         
         const uniqueRecordings = [...new Map(parsedRecordings.map(rec => [rec.id, rec])).values()]
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -129,7 +113,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
         const favoriteRecordings = uniqueRecordings.filter(rec => rec.isFavourite)
         setFavouritesState(prevState => [...prevState, ...favoriteRecordings])
->>>>>>> feature/dashboard
       } catch (error) {
         console.error('Error loading recordings:', error)
       }
@@ -163,20 +146,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-<<<<<<< HEAD
-  // Add new recording
-  const addRecording = useCallback((recording: RecordingWithMeta) => {
-    setRecordings(current => [recording, ...current])
-    
-    // Update localStorage
-    const storedRecordings = JSON.parse(localStorage.getItem('voiceRecordings') || '[]')
-    const updatedStoredRecordings = [recording, ...storedRecordings]
-    localStorage.setItem('voiceRecordings', JSON.stringify(updatedStoredRecordings))
-  }, [])
-
-  // Classroom functions
-  const updateClassroomName = useCallback((id: string, newName: string) => {
-=======
   // Auto-delete trash items
   useEffect(() => {
     const checkTrashItems = () => {
@@ -217,12 +186,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval)
   }, [trashedItemsState])
 
-  const addRecording = (recording: RecordingWithMeta) => {
+  const addRecording = useCallback((recording: RecordingWithMeta) => {
     setRecordings(current => [recording, ...current])
-  }
+  }, [setRecordings])
 
-  const updateClassroomName = (id: string, newName: string) => {
->>>>>>> feature/dashboard
+  const updateClassroomName = useCallback((id: string, newName: string) => {
     setClassrooms(current =>
       current.map(classroom =>
         classroom.id === id ? { ...classroom, name: newName } : classroom
@@ -236,7 +204,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           : item
       )
     )
-  }, [])
+  }, [setClassrooms])
 
   const addToFavourites = useCallback((classroom: Classroom) => {
     const updatedClassroom: Classroom = {
@@ -245,100 +213,29 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       type: 'classroom'
     }
     
-<<<<<<< HEAD
-    setFavourites(current => [updatedClassroom, ...current])
-    setClassrooms(current => 
-=======
     setFavouritesState(current => {
       const exists = current.some(item => item.id === classroom.id)
       return exists ? current : [updatedClassroom, ...current]
     })
     
     setClassrooms(current =>
->>>>>>> feature/dashboard
       current.map(c => c.id === classroom.id ? updatedClassroom : c)
     )
-  }, [])
+  }, [setClassrooms])
 
-<<<<<<< HEAD
   const removeFromFavourites = useCallback((id: string) => {
-    setFavourites(current => current.filter(item => item.id !== id))
-=======
-  const removeFromFavourites = (id: string) => {
     setFavouritesState(current => current.filter(item => item.id !== id))
->>>>>>> feature/dashboard
     
     setClassrooms(current =>
       current.map(c => c.id === id ? { ...c, isFavourite: false } : c)
     )
-<<<<<<< HEAD
-  }, [])
-
-  // Recording functions
-  const updateRecordingTitle = useCallback((id: string, newTitle: string) => {
-    setRecordings(current =>
-      current.map(recording =>
-        recording.id === id
-          ? { ...recording, title: newTitle }
-          : recording
-      )
-    )
-    
-    setFavourites(current =>
-      current.map(item =>
-        item.type === 'recording' && item.id === id
-          ? { ...item, title: newTitle }
-          : item
-      )
-    )
-
-    // Update in localStorage
-    const storedRecordings = JSON.parse(localStorage.getItem('voiceRecordings') || '[]')
-    const updatedStoredRecordings = storedRecordings.map((rec: RecordingWithMeta) =>
-      rec.id === id ? { ...rec, title: newTitle } : rec
-    )
-    localStorage.setItem('voiceRecordings', JSON.stringify(updatedStoredRecordings))
-  }, [])
-
-  const addRecordingToFavourites = useCallback((recording: RecordingWithMeta) => {
-    const updatedRecording: RecordingWithMeta = {
-      ...recording,
-      isFavourite: true,
-      type: 'recording'
-    }
-    
-    setFavourites(current => [updatedRecording, ...current])
-    setRecordings(current => 
-      current.map(r => r.id === recording.id ? updatedRecording : r)
-    )
-  }, [])
-
-  const removeRecordingFromFavourites = useCallback((id: string) => {
-    setFavourites(current => current.filter(item => item.id !== id))
-    
-    setRecordings(current => 
-=======
 
     setRecordings(current =>
->>>>>>> feature/dashboard
       current.map(r => r.id === id ? { ...r, isFavourite: false } : r)
     )
-  }, [])
+  }, [setClassrooms, setRecordings])
 
-<<<<<<< HEAD
-  const addRecordingToClassroom = useCallback((recordingId: string, classroomId: string) => {
-    setClassrooms(current =>
-      current.map(classroom =>
-        classroom.id === classroomId
-          ? {
-              ...classroom,
-              recordings: [...(classroom.recordings || []), recordingId],
-              lectureCount: classroom.lectureCount + 1,
-              lastActive: new Date().toISOString()
-            }
-          : classroom
-=======
-  const addRecordingToClassroom = (recordingId: string, classroomId: string | Classroom) => {
+  const addRecordingToClassroom = useCallback((recordingId: string, classroomId: string | Classroom) => {
     const colors = ['blue', 'purple', 'green', 'pink'] as const
     const targetClassroomId = typeof classroomId === 'string' ? classroomId : classroomId.id
     const now = new Date().toISOString()
@@ -347,7 +244,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       let updatedClassrooms = [...current]
       const existingClassroomIndex = updatedClassrooms.findIndex(
         classroom => classroom.id === targetClassroomId
->>>>>>> feature/dashboard
       )
 
       if (existingClassroomIndex !== -1) {
@@ -401,17 +297,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           : recording
       )
     )
-<<<<<<< HEAD
-  }, [])
-
-  const removeRecordingFromClassroom = useCallback((recordingId: string, classroomId: string) => {
-=======
 
     return targetClassroomId
-  }
+  }, [setClassrooms, setRecordings])
 
-  const removeRecordingFromClassroom = (recordingId: string, classroomId: string) => {
->>>>>>> feature/dashboard
+  const removeRecordingFromClassroom = useCallback((recordingId: string, classroomId: string) => {
     setClassrooms(current =>
       current.map(classroom =>
         classroom.id === classroomId
@@ -432,25 +322,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           : recording
       )
     )
-  }, [])
+  }, [setClassrooms, setRecordings])
 
-<<<<<<< HEAD
-  // Trash functions
-  const moveToTrash = useCallback((item: Classroom) => {
-    const currentIndex = classrooms.findIndex(c => c.id === item.id)
-    const itemsBefore = classrooms.slice(0, currentIndex).map(item => item.id)
-    
-    setClassrooms(current => current.filter(c => c.id !== item.id))
-    setTrashedItems(current => [
-=======
-  const moveToTrash = (classroom: Classroom) => {
+  const moveToTrash = useCallback((classroom: Classroom) => {
     const currentIndex = classroomsState.findIndex(c => c.id === classroom.id)
     const itemsBefore = classroomsState.slice(0, currentIndex).map(item => item.id)
     
     setClassrooms(current => current.filter(c => c.id !== classroom.id))
     
     setTrashedItemsState(current => [
->>>>>>> feature/dashboard
       { 
         ...classroom,
         deletedAt: new Date().toISOString(),
@@ -464,17 +344,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (classroom.isFavourite) {
       setFavouritesState(current => current.filter(i => i.id !== classroom.id))
     }
-  }, [classrooms])
+  }, [classroomsState, setClassrooms])
 
-<<<<<<< HEAD
   const moveRecordingToTrash = useCallback((recording: RecordingWithMeta) => {
-    const currentIndex = recordings.findIndex(r => r.id === recording.id)
-    const itemsBefore = recordings.slice(0, currentIndex).map(item => item.id)
-=======
-  const moveRecordingToTrash = (recording: RecordingWithMeta) => {
     const currentIndex = recordingsState.findIndex(r => r.id === recording.id)
     const itemsBefore = recordingsState.slice(0, currentIndex).map(item => item.id)
->>>>>>> feature/dashboard
     
     setRecordings(current => current.filter(r => r.id !== recording.id))
     
@@ -496,15 +370,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (recording.classroomId) {
       removeRecordingFromClassroom(recording.id, recording.classroomId)
     }
-  }, [recordings, removeRecordingFromClassroom])
+  }, [recordingsState, setRecordings, removeRecordingFromClassroom])
 
-<<<<<<< HEAD
   const restoreFromTrash = useCallback((id: string) => {
-    const itemToRestore = trashedItems.find(item => item.id === id)
-=======
-  const restoreFromTrash = (id: string) => {
     const itemToRestore = trashedItemsState.find(item => item.id === id)
->>>>>>> feature/dashboard
     if (!itemToRestore) return
 
     const { deletedAt, originalIndex, itemsBefore, ...restoredItem } = itemToRestore
@@ -513,7 +382,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (restoredItem.type === 'recording') {
       setRecordings(current => {
         const newRecordings = [...current]
-        const remainingBeforeItems = itemsBefore!.filter(id => 
+        const remainingBeforeItems = itemsBefore!.filter(id =>
+
+
           current.some(recording => recording.id === id)
         ).length
         const newPosition = Math.min(remainingBeforeItems, current.length)
@@ -535,25 +406,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (restoredItem.isFavourite) {
       setFavouritesState(current => [...current, restoredItem])
     }
-  }, [trashedItems])
+  }, [trashedItemsState, setClassrooms, setRecordings])
 
-<<<<<<< HEAD
   const deletePermanently = useCallback((id: string) => {
-    const itemToDelete = trashedItems.find(item => item.id === id)
-    if (itemToDelete?.type === 'recording') {
-      const storedRecordings = JSON.parse(localStorage.getItem('voiceRecordings') || '[]')
-      const updatedStoredRecordings = storedRecordings.filter((rec: RecordingWithMeta) => rec.id !== id)
-      localStorage.setItem('voiceRecordings', JSON.stringify(updatedStoredRecordings))
-    }
-    setTrashedItems(current => current.filter(item => item.id !== id))
-  }, [trashedItems])
-=======
-  const deletePermanently = (id: string) => {
     setTrashedItemsState(current => current.filter(item => item.id !== id))
-  }
->>>>>>> feature/dashboard
+  }, [])
 
-  const updateRecordingTitle = (id: string, newTitle: string) => {
+  const updateRecordingTitle = useCallback((id: string, newTitle: string) => {
     setRecordings(current =>
       current.map(recording =>
         recording.id === id ? { ...recording, title: newTitle } : recording
@@ -567,17 +426,17 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           : item
       )
     )
-  }
+  }, [setRecordings])
 
-  const updateRecordingTranscription = (id: string, transcription: string) => {
+  const updateRecordingTranscription = useCallback((id: string, transcription: string) => {
     setRecordings(current =>
       current.map(recording =>
         recording.id === id ? { ...recording, transcription } : recording
       )
     )
-  }
+  }, [setRecordings])
 
-  const addRecordingToFavourites = (recording: RecordingWithMeta) => {
+  const addRecordingToFavourites = useCallback((recording: RecordingWithMeta) => {
     const updatedRecording: RecordingWithMeta = {
       ...recording,
       isFavourite: true,
@@ -585,32 +444,31 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }
     
     setFavouritesState(current => {
-        const exists = current.some(item => item.id === recording.id)
-        return exists ? current : [updatedRecording, ...current]
-      })
-      
-      setRecordings(current =>
-        current.map(r => r.id === recording.id ? updatedRecording : r)
-      )
-    }
-<<<<<<< HEAD
+      const exists = current.some(item => item.id === recording.id)
+      return exists ? current : [updatedRecording, ...current]
+    })
+    
+    setRecordings(current =>
+      current.map(r => r.id === recording.id ? updatedRecording : r)
+    )
+  }, [setRecordings])
 
-    checkTrashItems()
-    const interval = setInterval(checkTrashItems, 1000 * 60 * 60)
-    return () => clearInterval(interval)
-  }, [])
+  const removeRecordingFromFavourites = useCallback((id: string) => {
+    setFavouritesState(current => current.filter(item => item.id !== id))
+    
+    setRecordings(current =>
+      current.map(r => r.id === id ? { ...r, isFavourite: false } : r)
+    )
+  }, [setRecordings])
 
-  // Memoize the context value to prevent unnecessary re-renders
+  // Memoize the context value
   const contextValue = useMemo(() => ({
-    // Include dark mode states
+    classrooms: classroomsState,
+    recordings: recordingsState,
+    favourites: favouritesState,
+    trashedItems: trashedItemsState,
     isDarkMode,
     toggleDarkMode,
-
-    // Original context values
-    classrooms,
-    recordings,
-    favourites,
-    trashedItems,
     addToFavourites,
     removeFromFavourites,
     moveToTrash,
@@ -625,19 +483,20 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     restoreFromTrash,
     deletePermanently,
     setRecordings,
-    addRecording
+    addRecording,
+    updateRecordingTranscription
   }), [
+    classroomsState,
+    recordingsState,
+    favouritesState,
+    trashedItemsState,
     isDarkMode,
     toggleDarkMode,
-
-    classrooms,
-    recordings,
-    favourites,
-    trashedItems,
     addToFavourites,
     removeFromFavourites,
     moveToTrash,
     updateClassroomName,
+    setClassrooms,
     addRecordingToFavourites,
     removeRecordingFromFavourites,
     moveRecordingToTrash,
@@ -646,7 +505,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     removeRecordingFromClassroom,
     restoreFromTrash,
     deletePermanently,
-    addRecording
+    setRecordings,
+    addRecording,
+    updateRecordingTranscription
   ])
 
   return (
@@ -656,55 +517,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function useAppState(): AppStateContextType {
+export function useAppState() {
   const context = useContext(AppStateContext)
   if (!context) {
     throw new Error('useAppState must be used within AppStateProvider')
-=======
-  
-    const removeRecordingFromFavourites = (id: string) => {
-      setFavouritesState(current => current.filter(item => item.id !== id))
-      
-      setRecordings(current =>
-        current.map(r => r.id === id ? { ...r, isFavourite: false } : r)
-      )
-    }
-  
-    return (
-      <AppStateContext.Provider 
-        value={{
-          classrooms: classroomsState,
-          recordings: recordingsState,
-          favourites: favouritesState,
-          trashedItems: trashedItemsState,
-          addToFavourites,
-          removeFromFavourites,
-          moveToTrash,
-          updateClassroomName,
-          setClassrooms,
-          addRecordingToFavourites,
-          removeRecordingFromFavourites,
-          moveRecordingToTrash,
-          updateRecordingTitle,
-          addRecordingToClassroom,
-          removeRecordingFromClassroom,
-          restoreFromTrash,
-          deletePermanently,
-          setRecordings,
-          addRecording,
-          updateRecordingTranscription
-        }}
-      >
-        {children}
-      </AppStateContext.Provider>
-    )
->>>>>>> feature/dashboard
   }
-  
-  export function useAppState() {
-    const context = useContext(AppStateContext)
-    if (!context) {
-      throw new Error('useAppState must be used within AppStateProvider')
-    }
-    return context
-  }
+  return context
+}

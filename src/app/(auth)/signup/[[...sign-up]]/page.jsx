@@ -1,6 +1,20 @@
-import { SignUp } from '@clerk/nextjs';
+'use client'
+
+import { SignUp } from '@clerk/nextjs'
+import { useAuth } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 const SignUpPage = () => {
+  const { isSignedIn } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (isSignedIn) {
+      router.push('/dashboard')
+    }
+  }, [isSignedIn, router])
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#14171F]">
       <SignUp
@@ -15,9 +29,11 @@ const SignUpPage = () => {
           }
         }}
         redirectUrl="/dashboard"
+        path="/signup"
+        signInUrl="/sign-in"   // Make sure this matches the path in SignInPage
       />
     </div>
-  );
-};
+  )
+}
 
-export default SignUpPage;
+export default SignUpPage
