@@ -46,3 +46,4 @@ next-env.d.ts
 # Add these if using npm
 yarn.lock
 node_modules
+public/uploads/*.wav
