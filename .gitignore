@@ -41,4 +41,8 @@ next-env.d.ts
 
 
 /tmp
-.env.local
+.env.local\
+
+# Add these if using npm
+yarn.lock
+node_modules
