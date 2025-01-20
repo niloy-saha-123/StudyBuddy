@@ -54,14 +54,18 @@ export default function RecordingsPage() {
   }, [])
 
   const formatDate = (date: Date) => {
+    // Convert to UTC string format to ensure consistency between server and client
+    const utcDate = new Date(date);
+    
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
-    }).format(date)
-  }
+      minute: '2-digit',
+      timeZone: 'UTC' // Ensure consistent timezone handling
+    }).format(utcDate)
+}
 
   const handleRename = (recording: RecordingWithMeta, e: React.MouseEvent) => {
     e.stopPropagation()
