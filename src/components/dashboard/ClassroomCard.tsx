@@ -220,7 +220,7 @@ export default function ClassroomCard({
           <div className="bg-white rounded-lg p-6 w-[400px] animate-in slide-in-from-bottom-4 duration-200">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Move to Trash</h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to move "{name}" to trash? Items in trash will be automatically deleted after 30 days.
+              Are you sure you want to move &quot;{name}&quot; to trash? Items in trash will be automatically deleted after 30 days.
             </p>
             <div className="flex justify-end gap-4">
               <button
@@ -249,7 +249,7 @@ export default function ClassroomCard({
           <div className="bg-white rounded-lg p-6 w-[400px] animate-in slide-in-from-bottom-4 duration-200">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Delete Permanently</h3>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to permanently delete "{name}"? This action cannot be undone.
+              Are you sure you want to permanently delete &quot;{name}&quot;? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-4">
               <button
