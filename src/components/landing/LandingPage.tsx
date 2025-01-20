@@ -10,8 +10,8 @@ import {
   Linkedin 
 } from 'lucide-react'
 import Image from 'next/image'
-import MohammedFarazKabbo from '/public/uploads/faraz.jpg'
-import NiloySaha from '/public/uploads/Niloy.jpg'
+import MohammedFarazKabbo from '../../../public/uploads/faraz.jpg'
+import NiloySaha from '../../../public/uploads/Niloy.jpg'
 
 const LandingPage = () => {
   const router = useRouter()
