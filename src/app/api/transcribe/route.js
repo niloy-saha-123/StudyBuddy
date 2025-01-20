@@ -8,9 +8,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Configure route behavior
+// Route Segment Config (new format)
+export const runtime = 'nodejs'; // Specify nodejs runtime since we're using fs
 export const maxDuration = 300; // 5 minutes timeout
 export const dynamic = 'force-dynamic';
+export const revalidate = 0; // Disable caching for this route
 
 export async function POST(req) {
   let tempFilePath = null;
@@ -101,7 +103,7 @@ export async function POST(req) {
       success: true,
       transcription: transcription.text,
       fileUrl: `/uploads/${outputFileName}`,
-      audioUrl: `/uploads/${outputFileName}` // Added this to match your client expectations
+      audioUrl: `/uploads/${outputFileName}`
     });
 
   } catch (error) {
@@ -141,11 +143,3 @@ export async function POST(req) {
     );
   }
 }
-
-// Configure the API route
-export const config = {
-  api: {
-    bodyParser: false,
-    responseLimit: false,
-  },
-};
