@@ -38,3 +38,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+/tmp
+.env.local\
+
+# Add these if using npm
+yarn.lock
+node_modules
