@@ -79,41 +79,26 @@ const Header = () => {
                   className="absolute left-0 w-64 bg-[#1a1f2e] rounded-lg shadow-lg py-2 
                            mt-2 border border-gray-800 animate-fadeIn"
                 >
-                  <Link
-                    href="/live-transcription"
-                    className="flex px-6 py-3 items-center text-gray-300 hover:bg-blue-500/10 hover:text-white"
-                  >
+                  <div className="flex px-6 py-3 items-center text-gray-300 hover:bg-blue-500/10 hover:text-white cursor-pointer">
                     <Mic className="w-6 h-6 mr-3 text-blue-400" />
                     <span className="text-lg">Live Transcription</span>
-                  </Link>
-                  <Link
-                    href="/summarization"
-                    className="flex px-6 py-3 items-center text-gray-300 hover:bg-blue-500/10 hover:text-white"
-                  >
+                  </div>
+                  <div className="flex px-6 py-3 items-center text-gray-300 hover:bg-blue-500/10 hover:text-white cursor-pointer">
                     <BookOpen className="w-6 h-6 mr-3 text-blue-400" />
                     <span className="text-lg">Summarization</span>
-                  </Link>
-                  <Link
-                    href="/exam-preparation"
-                    className="flex px-6 py-3 items-center text-gray-300 hover:bg-blue-500/10 hover:text-white"
-                  >
+                  </div>
+                  <div className="flex px-6 py-3 items-center text-gray-300 hover:bg-blue-500/10 hover:text-white cursor-pointer">
                     <GraduationCap className="w-6 h-6 mr-3 text-blue-400" />
                     <span className="text-lg">Exam Preparation</span>
-                  </Link>
-                  <Link
-                    href="/multilingual-support"
-                    className="flex px-6 py-3 items-center text-gray-300 hover:bg-blue-500/10 hover:text-white"
-                  >
+                  </div>
+                  <div className="flex px-6 py-3 items-center text-gray-300 hover:bg-blue-500/10 hover:text-white cursor-pointer">
                     <Globe className="w-6 h-6 mr-3 text-blue-400" />
                     <span className="text-lg">Multilingual Support</span>
-                  </Link>
-                  <Link
-                    href="/classroom-organisation"
-                    className="flex px-6 py-3 items-center text-gray-300 hover:bg-blue-500/10 hover:text-white"
-                  >
+                  </div>
+                  <div className="flex px-6 py-3 items-center text-gray-300 hover:bg-blue-500/10 hover:text-white cursor-pointer">
                     <Layers className="w-6 h-6 mr-3 text-blue-400" />
                     <span className="text-lg">Classroom Organisation</span>
-                  </Link>
+                  </div>
                 </div>
               )}
             </div>
